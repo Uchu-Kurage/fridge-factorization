@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#FF8FAB" />
+  <title>冷蔵庫☆因数分解</title>
+  <meta name="description" content="冷蔵庫の中身から作れるメニューを提案してくれるアプリ。食材・調味料の管理、メニュー提案、買い物リスト機能搭載。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header" role="banner">
+    <div class="header-inner">
+      <h1>🧊✨ 冷蔵庫☆因数分解</h1>
+      <p class="header-sub">冷蔵庫の中身でメニューを考えよう！</p>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="app-main" role="main">
+
+    <!-- ====== TAB: 冷蔵庫 ====== -->
+    <section id="panel-fridge" class="tab-panel active" aria-label="冷蔵庫">
+
+      <div class="tab-toolbar">
+        <div class="tab-toolbar-row">
+          <span class="tab-toolbar-title">🧊 冷蔵庫の中身</span>
+          <button id="btn-add-ingredient" class="btn btn-primary btn-sm" aria-label="食材を追加">
+            ＋ 食材を追加
+          </button>
+        </div>
+        <div class="tab-toolbar-row" style="margin-top:10px;">
+          <div class="search-input-wrap">
+            <input
+              type="search"
+              id="fridge-search"
+              class="form-input"
+              placeholder="食材を検索..."
+              aria-label="食材を検索"
+            />
+          </div>
+          <div class="filter-select-wrap">
+            <select id="fridge-cat-filter" class="form-select" aria-label="カテゴリフィルター">
+              <option value="all">全カテゴリ</option>
+              <option value="野菜">🥦 野菜</option>
+              <option value="肉・魚">🥩 肉・魚</option>
+              <option value="卵・乳製品">🥚 卵・乳製品</option>
+              <option value="調味料">🧂 調味料</option>
+              <option value="乾物・缶詰">🥫 乾物・缶詰</option>
+              <option value="その他">🍱 その他</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-scroll">
+        <div id="fridge-content">
+          <!-- JS renders ingredient cards here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== TAB: メニュー提案 ====== -->
+    <section id="panel-suggest" class="tab-panel" aria-label="メニュー提案">
+
+      <div class="tab-toolbar">
+        <div class="tab-toolbar-row">
+          <span class="tab-toolbar-title">🍽️ メニュー提案</span>
+          <div class="filter-select-wrap">
+            <select id="suggest-filter" class="form-select" aria-label="表示フィルター">
+              <option value="all">すべて</option>
+              <option value="can">今すぐ作れる</option>
+              <option value="almost">あと少し</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-scroll">
+        <div id="suggest-content">
+          <!-- JS renders recipe suggestions here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== TAB: 買い物リスト ====== -->
+    <section id="panel-shopping" class="tab-panel" aria-label="買い物リスト">
+
+      <div class="tab-toolbar">
+        <div class="tab-toolbar-row">
+          <span class="tab-toolbar-title">🛒 買い物リスト</span>
+          <button id="btn-add-shopping" class="btn btn-primary btn-sm" aria-label="アイテムを追加">
+            ＋ 追加
+          </button>
+        </div>
+      </div>
+
+      <div class="tab-scroll">
+        <div id="shopping-content">
+          <!-- JS renders shopping list here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== TAB: レシピ図鑑 ====== -->
+    <section id="panel-library" class="tab-panel" aria-label="レシピ図鑑">
+
+      <div class="tab-toolbar">
+        <div class="tab-toolbar-row">
+          <span class="tab-toolbar-title">📚 レシピ図鑑</span>
+          <button id="btn-add-recipe" class="btn btn-secondary btn-sm" aria-label="カスタムレシピを追加">
+            ＋ 自作レシピ
+          </button>
+        </div>
+        <div class="tab-toolbar-row" style="margin-top:10px;">
+          <div class="search-input-wrap">
+            <input
+              type="search"
+              id="library-search"
+              class="form-input"
+              placeholder="レシピ・食材を検索..."
+              aria-label="レシピを検索"
+            />
+          </div>
+          <div class="filter-select-wrap">
+            <select id="library-filter" class="form-select" aria-label="カテゴリフィルター">
+              <option value="all">全ジャンル</option>
+              <option value="和食">🍱 和食</option>
+              <option value="洋食">🍝 洋食</option>
+              <option value="中華">🥢 中華</option>
+              <option value="丼・麺">🍜 丼・麺</option>
+              <option value="副菜・その他">🥗 副菜・その他</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-scroll">
+        <div id="library-content">
+          <!-- JS renders recipe library here -->
+        </div>
+      </div>
+    </section>
+
+  </main><!-- /main -->
+
+  <!-- ===== BOTTOM NAVIGATION ===== -->
+  <nav class="bottom-nav" role="navigation" aria-label="タブナビゲーション">
+
+    <button class="nav-btn active" data-tab="fridge" id="nav-fridge" aria-label="冷蔵庫タブ">
+      <div class="nav-icon-wrap">🧊</div>
+      <span class="nav-label">冷蔵庫</span>
+    </button>
+
+    <button class="nav-btn" data-tab="suggest" id="nav-suggest" aria-label="メニュー提案タブ">
+      <div class="nav-icon-wrap">🍽️</div>
+      <span class="nav-label">提案</span>
+    </button>
+
+    <button class="nav-btn" data-tab="shopping" id="nav-shopping" aria-label="買い物リストタブ">
+      <div class="nav-icon-wrap">🛒</div>
+      <span class="nav-label">買い物</span>
+      <span class="nav-badge" id="shopping-badge" aria-live="polite"></span>
+    </button>
+
+    <button class="nav-btn" data-tab="library" id="nav-library" aria-label="レシピ図鑑タブ">
+      <div class="nav-icon-wrap">📚</div>
+      <span class="nav-label">図鑑</span>
+    </button>
+
+  </nav>
+
+</div><!-- /app-wrapper -->
+
+<!-- ===== MODAL OVERLAY ===== -->
+<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-label="ダイアログ">
+  <div id="modal-box">
+    <!-- Dynamically filled by JS -->
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
