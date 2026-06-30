@@ -838,7 +838,7 @@ function showBulkAddModal() {
               fi.name.toLowerCase() === qi.name.toLowerCase()
             );
             return `<button class="quick-chip ${inFridge ? 'quick-chip-have' : ''}"
-              onclick="quickAddBulkRow(${globalIdx})" title="${qi.quantity}${qi.unit}">
+              onclick="quickAddBulkRow(${globalIdx}, this)" title="${qi.quantity}${qi.unit}">
               ${escapeHtml(qi.name)}${inFridge ? ' ✓' : ''}
             </button>`;
           }).join('')}
@@ -883,10 +883,29 @@ function addBulkRowEmpty() {
   addBulkRow(null);
 }
 
-function quickAddBulkRow(globalIdx) {
+function quickAddBulkRow(globalIdx, chipEl) {
   const qi = QUICK_INGREDIENTS[globalIdx];
 
-  // Find an empty row to fill in
+  // チップの選択状態をトグル
+  const isSelected = chipEl.classList.contains('quick-chip-selected');
+  if (isSelected) {
+    // 選択解除 → 対応する行を削除
+    chipEl.classList.remove('quick-chip-selected');
+    const rows = document.querySelectorAll('#bulk-rows-container .bulk-row');
+    for (const row of rows) {
+      if (row.querySelector('.bulk-name').value.trim() === qi.name) {
+        row.remove();
+        updateBulkCount();
+        return;
+      }
+    }
+    return;
+  }
+
+  // 選択状態にする
+  chipEl.classList.add('quick-chip-selected');
+
+  // 空の行を探して入力する（スクロールしない）
   const rows = document.querySelectorAll('#bulk-rows-container .bulk-row');
   for (const row of rows) {
     const nameInput = row.querySelector('.bulk-name');
@@ -895,19 +914,19 @@ function quickAddBulkRow(globalIdx) {
       row.querySelector('.bulk-cat').value = qi.category;
       row.querySelector('.bulk-qty').value = qi.quantity;
       row.querySelector('.bulk-unit').value = qi.unit;
-      nameInput.focus();
+      // focus({ preventScroll: true }) でスクロールせずに入力可能状態にする
+      nameInput.focus({ preventScroll: true });
       updateBulkCount();
-      // Highlight the filled row briefly
       row.classList.add('bulk-row-flash');
       setTimeout(() => row.classList.remove('bulk-row-flash'), 600);
       return;
     }
   }
-  // No empty row — create one with this ingredient pre-filled
-  addBulkRow(qi);
+  // 空き行なし → 新しい行をスクロールなしで追加
+  addBulkRow(qi, true);
 }
 
-function addBulkRow(prefill) {
+function addBulkRow(prefill, noScroll = false) {
   const id = bulkRowCounter++;
   const container = document.getElementById('bulk-rows-container');
   if (!container) return;
