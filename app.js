@@ -610,6 +610,8 @@ const QUICK_INGREDIENTS = [
   { name: 'バター',       category: '卵・乳製品', quantity: 200, unit: 'g' },
   { name: '生クリーム',   category: '卵・乳製品', quantity: 200, unit: 'ml' },
   { name: '豆腐',         category: '卵・乳製品', quantity: 1,   unit: '個' },
+  { name: 'チーズ',       category: '卵・乳製品', quantity: 1,   unit: '個' },
+
   // 調味料
   { name: '醤油',         category: '調味料',    quantity: 300, unit: 'ml' },
   { name: 'みりん',       category: '調味料',    quantity: 200, unit: 'ml' },
@@ -632,11 +634,13 @@ const QUICK_INGREDIENTS = [
   { name: 'ツナ缶',       category: '乾物・缶詰', quantity: 1,   unit: '缶' },
   { name: 'ひじき',       category: '乾物・缶詰', quantity: 20,  unit: 'g' },
   { name: '薄力粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
+  { name: 'うどん',       category: '乾物・缶詰', quantity: 1,   unit: '袋' },
   // その他
   { name: 'ご飯',         category: 'その他',    quantity: 2,   unit: '個' },
   { name: '油揚げ',       category: 'その他',    quantity: 2,   unit: '枚' },
   { name: '餃子の皮',     category: 'その他',    quantity: 30,  unit: '枚' },
   { name: '塩昆布',       category: 'その他',    quantity: 20,  unit: 'g' },
+  { name: '納豆',         category: 'その他',    quantity: 1,   unit: 'パック' },
 ];
 
 // === STATE ===
