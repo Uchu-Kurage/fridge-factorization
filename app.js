@@ -811,6 +811,7 @@ const QUICK_INGREDIENTS = [
   { name: 'めんつゆ',     category: '調味料',    quantity: 200, unit: 'ml' },
   { name: 'コンソメ',     category: '調味料',    quantity: 1,   unit: '個' },
   { name: '甜麺醤',       category: '調味料',    quantity: 1,   unit: '個' },
+  { name: 'オイスターソース', category: '調味料',  quantity: 1,   unit: '個' },
   // 乾物・缶詰
   { name: 'パスタ',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
   { name: 'そば',         category: '乾物・缶詰', quantity: 200, unit: 'g' },
