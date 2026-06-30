@@ -580,6 +580,8 @@ const QUICK_INGREDIENTS = [
   { name: 'きゅうり',     category: '野菜',      quantity: 2,   unit: '本' },
   { name: 'もやし',       category: '野菜',      quantity: 1,   unit: '袋' },
   { name: 'ほうれん草',   category: '野菜',      quantity: 1,   unit: '束' },
+  { name: '小松菜',       category: '野菜',      quantity: 1,   unit: '束' },
+  { name: 'とうもろこし', category: '野菜',      quantity: 1,   unit: '本' },
   { name: 'ネギ',         category: '野菜',      quantity: 2,   unit: '本' },
   { name: 'にんにく',     category: '野菜',      quantity: 1,   unit: '個' },
   { name: 'しょうが',     category: '野菜',      quantity: 1,   unit: '個' },
