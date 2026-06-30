@@ -1410,3 +1410,175 @@ a { text-decoration: none; color: inherit; }
 .consume-preview-ok   { color: var(--color-success); }
 .consume-preview-zero { color: var(--color-accent); }
 .consume-preview-warn { color: var(--color-danger); }
+
+/* === REGULAR INGREDIENTS === */
+
+/* ⭐ 食材カードのバッジ */
+.regular-star-badge {
+  font-size: 0.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* レギュラーの ⭐ ボタン：アクティブ状態 */
+.btn-icon.regular-active {
+  background: #FFF8C5;
+  color: #B8860B;
+}
+.btn-icon.regular-active:hover {
+  background: #FFE566;
+}
+
+/* アラート中の食材カード */
+.ingredient-card.regular-alert-card {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+  animation: pulseWarn 2s ease-in-out infinite;
+}
+
+@keyframes pulseWarn {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25); }
+  50%       { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.4); }
+}
+
+/* アラートバナー */
+.regular-alert-banner {
+  background: linear-gradient(135deg, #FFFBEA 0%, #FFF3CC 100%);
+  border: 1.5px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  animation: cardIn 0.3s ease both;
+}
+
+.regular-alert-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #8B6914;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.regular-alert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(184, 134, 11, 0.15);
+  flex-wrap: wrap;
+}
+
+.regular-alert-icon { font-size: 1rem; flex-shrink: 0; }
+
+.regular-alert-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  min-width: 60px;
+}
+
+.regular-alert-detail {
+  font-size: 0.82rem;
+  color: #8B6914;
+  flex: 1;
+}
+
+.regular-alert-shop-btn {
+  background: var(--color-warning);
+  color: white;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.regular-alert-shop-btn:hover { opacity: 0.85; transform: scale(1.04); }
+
+/* レギュラー管理モーダル */
+.regular-manager-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.regular-modal-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.regular-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.regular-empty-hint {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 16px 0;
+  line-height: 1.7;
+}
+
+.regular-row {
+  background: var(--bg-card);
+  border: 1.5px solid var(--color-primary-light);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.regular-row-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.regular-row-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.regular-row-min {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  background: var(--bg-surface);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.regular-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 状態バッジ */
+.reg-status {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.reg-status-ok      { background: var(--color-success-light); color: var(--color-success); }
+.reg-status-low     { background: #FFF3CC; color: #8B6914; }
+.reg-status-missing { background: var(--color-danger-light); color: var(--color-danger); }

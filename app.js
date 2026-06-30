@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   INGREDIENTS: 'fridge_ingredients',
   SHOPPING: 'fridge_shopping',
   CUSTOM_RECIPES: 'fridge_custom_recipes',
+  REGULAR_SETTINGS: 'fridge_regular_settings',
 };
 
 const INGREDIENT_CATEGORIES = ['野菜', '肉・魚', '卵・乳製品', '調味料', '乾物・缶詰', 'その他'];
@@ -833,6 +834,7 @@ let state = {
   ingredients: [],
   shoppingList: [],
   customRecipes: [],
+  regularSettings: [],   // レギュラー食材設定
   activeTab: 'fridge',
   fridgeSearch: '',
   fridgeCategoryFilter: 'all',
@@ -846,6 +848,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(state.ingredients));
   localStorage.setItem(STORAGE_KEYS.SHOPPING, JSON.stringify(state.shoppingList));
   localStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(state.customRecipes));
+  localStorage.setItem(STORAGE_KEYS.REGULAR_SETTINGS, JSON.stringify(state.regularSettings));
   // Update shopping badge whenever state is saved
   const badge = document.getElementById('shopping-badge');
   if (badge) {
@@ -853,6 +856,8 @@ function saveState() {
     badge.textContent = count > 0 ? count : '';
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
+  // Update regular alert badge
+  updateRegularAlertBadge();
 }
 
 function loadState() {
@@ -860,10 +865,12 @@ function loadState() {
     state.ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
     state.shoppingList = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPPING) || '[]');
     state.customRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES) || '[]');
+    state.regularSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGULAR_SETTINGS) || '[]');
   } catch {
     state.ingredients = [];
     state.shoppingList = [];
     state.customRecipes = [];
+    state.regularSettings = [];
   }
 }
 
@@ -1706,6 +1713,161 @@ function deleteCustomRecipe(id) {
 }
 
 // ==================== RENDER: FRIDGE TAB ====================
+// ==================== REGULAR INGREDIENTS LOGIC ====================
+
+function getRegularAlerts() {
+  // 各レギュラー設定について現在の在庫状況を確認
+  return state.regularSettings.map(reg => {
+    const found = state.ingredients.find(
+      i => i.name.toLowerCase() === reg.name.toLowerCase()
+    );
+    if (!found) {
+      return { ...reg, status: 'missing', currentQty: 0 };
+    }
+    if (found.quantity < reg.minQuantity) {
+      return { ...reg, status: 'low', currentQty: found.quantity };
+    }
+    return { ...reg, status: 'ok', currentQty: found.quantity };
+  }).filter(r => r.status !== 'ok');
+}
+
+function updateRegularAlertBadge() {
+  const badge = document.getElementById('regular-alert-badge');
+  if (!badge) return;
+  const alerts = getRegularAlerts();
+  if (alerts.length > 0) {
+    badge.textContent = alerts.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
+
+function showRegularManagerModal() {
+  const settings = state.regularSettings;
+  const rows = settings.length === 0
+    ? `<p class="regular-empty-hint">レギュラー食材が未設定です。<br>食材カードの ⭐ から追加できます。</p>`
+    : settings.map(reg => {
+        const found = state.ingredients.find(i => i.name.toLowerCase() === reg.name.toLowerCase());
+        const currentQty = found ? found.quantity : null;
+        let statusBadge = '';
+        if (currentQty === null) {
+          statusBadge = `<span class="reg-status reg-status-missing">未登録</span>`;
+        } else if (currentQty < reg.minQuantity) {
+          statusBadge = `<span class="reg-status reg-status-low">残り少ない (${currentQty}${reg.unit})</span>`;
+        } else {
+          statusBadge = `<span class="reg-status reg-status-ok">✓ 充足 (${currentQty}${reg.unit})</span>`;
+        }
+        return `
+          <div class="regular-row">
+            <div class="regular-row-info">
+              <span class="regular-row-name">⭐ ${escapeHtml(reg.name)}</span>
+              <span class="regular-row-min">最低 ${reg.minQuantity}${reg.unit}</span>
+              ${statusBadge}
+            </div>
+            <div class="regular-row-actions">
+              <button class="btn btn-ghost btn-sm" onclick="showSetRegularModal('${reg.name}')">変更</button>
+              <button class="btn-icon danger" onclick="removeRegularSetting('${reg.id}')">🗑️</button>
+            </div>
+          </div>`;
+      }).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>⭐ レギュラー食材の管理</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="regular-manager-desc">常に確保しておきたい食材を設定すると、在庫が減ったときにアラートが表示されます。</p>
+      <div class="regular-list">${rows}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
+    </div>
+  `);
+}
+
+function showSetRegularModal(name, ingId) {
+  // name は食材名、ingId は任意（食材カードから呼ぶ場合）
+  const ing = ingId
+    ? state.ingredients.find(i => i.id === ingId)
+    : state.ingredients.find(i => i.name === name);
+  const existing = state.regularSettings.find(
+    r => r.name.toLowerCase() === (name || ing?.name || '').toLowerCase()
+  );
+  const defaultName = name || ing?.name || '';
+  const defaultUnit = existing?.unit || ing?.unit || '個';
+  const defaultMin = existing?.minQuantity || (ing ? Math.max(1, Math.floor(ing.quantity / 2)) : 1);
+
+  openModal(`
+    <div class="modal-header">
+      <h2>⭐ レギュラー食材に設定</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="consume-ing-name">${escapeHtml(defaultName)}</div>
+      <p class="regular-modal-desc">この食材の在庫がここで設定した量を下回るとアラートが表示されます。</p>
+      <div class="form-group">
+        <label class="form-label">アラートを出す最低量</label>
+        <div class="consume-stepper">
+          <button class="btn btn-ghost consume-step-btn" onclick="
+            var el=document.getElementById('reg-min-qty');
+            el.value=Math.max(0.1, Math.round((parseFloat(el.value)||0-1)*10)/10);
+          ">－</button>
+          <input id="reg-min-qty" class="form-input consume-input" type="number"
+            min="0.1" step="0.1" value="${defaultMin}">
+          <button class="btn btn-ghost consume-step-btn" onclick="
+            var el=document.getElementById('reg-min-qty');
+            el.value=Math.round((parseFloat(el.value)||0+1)*10)/10;
+          ">＋</button>
+          <span class="consume-unit">${escapeHtml(defaultUnit)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveRegularSetting('${escapeHtml(defaultName)}', '${escapeHtml(defaultUnit)}')">⭐ 設定を保存</button>
+    </div>
+  `);
+}
+
+function saveRegularSetting(name, unit) {
+  const minInput = document.getElementById('reg-min-qty');
+  const minQty = parseFloat(minInput?.value) || 1;
+  if (minQty <= 0) { showToast('最低量を入力してください', 'error'); return; }
+
+  const existing = state.regularSettings.find(
+    r => r.name.toLowerCase() === name.toLowerCase()
+  );
+  if (existing) {
+    existing.minQuantity = minQty;
+    existing.unit = unit;
+  } else {
+    state.regularSettings.push({
+      id: generateId(),
+      name,
+      minQuantity: minQty,
+      unit,
+    });
+  }
+  saveState();
+  closeModal();
+  renderFridgeTab();
+  showToast(`${name} をレギュラー食材に設定しました ⭐`, 'success');
+}
+
+function removeRegularSetting(id) {
+  const reg = state.regularSettings.find(r => r.id === id);
+  state.regularSettings = state.regularSettings.filter(r => r.id !== id);
+  saveState();
+  renderFridgeTab();
+  showToast(`${reg?.name || ''} をレギュラーから解除しました`, 'info');
+  // 管理モーダルが開いていれば再描画
+  showRegularManagerModal();
+}
+
+// ==================== RENDER: FRIDGE TAB ====================
 function renderFridgeTab() {
   const container = document.getElementById('fridge-content');
   if (!container) return;
@@ -1724,8 +1886,36 @@ function renderFridgeTab() {
     if (items.length > 0) groups[cat] = items;
   }
 
+  // === レギュラー食材アラートバナー ===
+  const alerts = getRegularAlerts();
+  let alertBanner = '';
+  if (alerts.length > 0) {
+    const alertItems = alerts.map(a => {
+      const isMissing = a.status === 'missing';
+      return `
+        <div class="regular-alert-item">
+          <span class="regular-alert-icon">${isMissing ? '📭' : '⚠️'}</span>
+          <span class="regular-alert-name">${escapeHtml(a.name)}</span>
+          <span class="regular-alert-detail">
+            ${isMissing
+              ? '冷蔵庫にありません'
+              : `残り ${a.currentQty}${a.unit}（最低 ${a.minQuantity}${a.unit}）`}
+          </span>
+          <button class="btn btn-sm regular-alert-shop-btn"
+            onclick="addRegularToShopping('${escapeHtml(a.id)}')">🛒 追加</button>
+        </div>`;
+    }).join('');
+    alertBanner = `
+      <div class="regular-alert-banner">
+        <div class="regular-alert-header">
+          ⭐ レギュラー食材のアラート (${alerts.length}件)
+        </div>
+        ${alertItems}
+      </div>`;
+  }
+
   if (ings.length === 0) {
-    container.innerHTML = `
+    container.innerHTML = alertBanner + `
       <div class="empty-state">
         <div class="empty-icon">🧊</div>
         <p>まだ食材が登録されていません</p>
@@ -1734,27 +1924,60 @@ function renderFridgeTab() {
     return;
   }
 
-  container.innerHTML = Object.entries(groups).map(([cat, items]) => `
+  container.innerHTML = alertBanner + Object.entries(groups).map(([cat, items]) => `
     <div class="ingredient-group">
       <h3 class="group-title">${CATEGORY_EMOJIS[cat]} ${cat}</h3>
       <div class="ingredient-grid">
-        ${items.map(ing => `
-          <div class="ingredient-card" data-id="${ing.id}">
+        ${items.map(ing => {
+          const isRegular = state.regularSettings.some(
+            r => r.name.toLowerCase() === ing.name.toLowerCase()
+          );
+          const regAlert = isRegular && alerts.some(a => a.name.toLowerCase() === ing.name.toLowerCase());
+          return `
+          <div class="ingredient-card${regAlert ? ' regular-alert-card' : ''}" data-id="${ing.id}">
             <div class="ingredient-card-body">
+              ${isRegular ? `<span class="regular-star-badge" title="レギュラー食材">⭐</span>` : ''}
               <span class="ingredient-name">${escapeHtml(ing.name)}</span>
               <span class="ingredient-qty">${ing.quantity}${ing.unit}</span>
             </div>
             <div class="ingredient-card-actions">
               <button class="btn-icon consume" title="消費" onclick="showConsumeModal('${ing.id}')">🍽️</button>
+              <button class="btn-icon ${isRegular ? 'regular-active' : ''}" title="${isRegular ? 'レギュラー設定を変更' : 'レギュラー食材に設定'}"
+                onclick="showSetRegularModal('${escapeHtml(ing.name)}', '${ing.id}')">⭐</button>
               <button class="btn-icon" title="編集" onclick="showEditIngredientModal('${ing.id}')">✏️</button>
               <button class="btn-icon danger" title="削除" onclick="deleteIngredient('${ing.id}')">🗑️</button>
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     </div>
   `).join('');
+
+  // バッジ更新
+  updateRegularAlertBadge();
 }
+
+function addRegularToShopping(regId) {
+  const reg = state.regularSettings.find(r => r.id === regId);
+  if (!reg) return;
+  // 既に買い物リストにある場合はスキップ
+  const already = state.shoppingList.some(s => s.name.toLowerCase() === reg.name.toLowerCase() && !s.checked);
+  if (already) { showToast(`${reg.name} は既に買い物リストにあります`, 'info'); return; }
+  const preset = QUICK_INGREDIENTS.find(q => q.name === reg.name);
+  state.shoppingList.push({
+    id: generateId(),
+    name: reg.name,
+    category: preset ? preset.category : 'その他',
+    quantity: reg.minQuantity,
+    unit: reg.unit,
+    checked: false,
+    addedAt: Date.now(),
+  });
+  saveState();
+  renderFridgeTab();
+  showToast(`${reg.name} を買い物リストに追加しました 🛒`, 'success');
+}
+
 
 // ==================== RENDER: SUGGEST TAB ====================
 function renderSuggestTab() {

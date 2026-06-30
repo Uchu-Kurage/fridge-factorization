@@ -33,6 +33,11 @@
         <div class="tab-toolbar-row">
           <span class="tab-toolbar-title">🧊 冷蔵庫の中身</span>
           <div class="toolbar-btn-group">
+            <button id="btn-regular-manager" class="btn btn-ghost btn-sm" aria-label="レギュラー食材管理"
+              onclick="showRegularManagerModal()">
+              ⭐ レギュラー管理
+              <span id="regular-alert-badge" class="nav-badge" style="display:none; position:static; margin-left:4px;"></span>
+            </button>
             <button id="btn-bulk-add" class="btn btn-secondary btn-sm" aria-label="一括追加">
               📦 一括追加
             </button>
