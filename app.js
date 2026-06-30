@@ -1281,6 +1281,102 @@ function submitAddIngredient() {
   showToast(`${name} を追加しました！`, 'success');
 }
 
+// ==================== MODAL: CONSUME INGREDIENT ====================
+function showConsumeModal(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  if (!ing) return;
+
+  openModal(`
+    <div class="modal-header">
+      <h2>🍽️ 食材を使う</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="consume-ing-name">${escapeHtml(ing.name)}</div>
+      <div class="consume-current">現在の在庫：<strong>${ing.quantity}${ing.unit}</strong></div>
+      <div class="form-group">
+        <label class="form-label">使う量</label>
+        <div class="consume-stepper">
+          <button class="btn btn-ghost consume-step-btn" onclick="changeConsumeAmt(-1)">－</button>
+          <input id="consume-amount" class="form-input consume-input" type="number"
+            min="0.1" step="0.1" value="1"
+            oninput="updateConsumePreview('${id}')">
+          <button class="btn btn-ghost consume-step-btn" onclick="changeConsumeAmt(1)">＋</button>
+          <span class="consume-unit">${escapeHtml(ing.unit)}</span>
+        </div>
+      </div>
+      <div id="consume-preview" class="consume-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="consumeIngredient('${id}')">使う ✅</button>
+    </div>
+  `);
+
+  updateConsumePreview(id);
+}
+
+function changeConsumeAmt(delta) {
+  const input = document.getElementById('consume-amount');
+  if (!input) return;
+  const val = parseFloat(input.value) || 0;
+  input.value = Math.max(0.1, Math.round((val + delta) * 10) / 10);
+  // Trigger preview update — find ingredient id from consume-preview data
+  const preview = document.getElementById('consume-preview');
+  if (preview && preview.dataset.ingId) {
+    updateConsumePreview(preview.dataset.ingId);
+  }
+}
+
+function updateConsumePreview(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  const preview = document.getElementById('consume-preview');
+  const input = document.getElementById('consume-amount');
+  if (!ing || !preview || !input) return;
+
+  preview.dataset.ingId = id;
+  const amt = parseFloat(input.value) || 0;
+  const remaining = Math.round((ing.quantity - amt) * 100) / 100;
+
+  if (amt <= 0) {
+    preview.innerHTML = `<span class="consume-preview-warn">⚠️ 使う量を入力してください</span>`;
+  } else if (remaining > 0) {
+    preview.innerHTML = `<span class="consume-preview-ok">✅ 使用後の残量：<strong>${remaining}${ing.unit}</strong></span>`;
+  } else if (remaining === 0) {
+    preview.innerHTML = `<span class="consume-preview-zero">📭 使い切ります（冷蔵庫から削除されます）</span>`;
+  } else {
+    preview.innerHTML = `<span class="consume-preview-warn">⚠️ 在庫（${ing.quantity}${ing.unit}）を超えています</span>`;
+  }
+}
+
+function consumeIngredient(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  const input = document.getElementById('consume-amount');
+  if (!ing || !input) return;
+
+  const amt = parseFloat(input.value) || 0;
+  if (amt <= 0) { showToast('使う量を入力してください', 'error'); return; }
+  if (amt > ing.quantity) { showToast(`在庫（${ing.quantity}${ing.unit}）を超えています`, 'error'); return; }
+
+  const remaining = Math.round((ing.quantity - amt) * 100) / 100;
+  if (remaining <= 0) {
+    // 使い切り → 削除
+    state.ingredients = state.ingredients.filter(i => i.id !== id);
+    saveState();
+    closeModal();
+    renderFridgeTab();
+    renderSuggestTab();
+    showToast(`${ing.name} を使い切りました！`, 'success');
+  } else {
+    ing.quantity = remaining;
+    saveState();
+    closeModal();
+    renderFridgeTab();
+    renderSuggestTab();
+    showToast(`${ing.name} を ${amt}${ing.unit} 使いました（残り ${remaining}${ing.unit}）`, 'success');
+  }
+}
+
 // ==================== MODAL: EDIT INGREDIENT ====================
 function showEditIngredientModal(id) {
   const ing = state.ingredients.find(i => i.id === id);
@@ -1649,6 +1745,7 @@ function renderFridgeTab() {
               <span class="ingredient-qty">${ing.quantity}${ing.unit}</span>
             </div>
             <div class="ingredient-card-actions">
+              <button class="btn-icon consume" title="消費" onclick="showConsumeModal('${ing.id}')">🍽️</button>
               <button class="btn-icon" title="編集" onclick="showEditIngredientModal('${ing.id}')">✏️</button>
               <button class="btn-icon danger" title="削除" onclick="deleteIngredient('${ing.id}')">🗑️</button>
             </div>
