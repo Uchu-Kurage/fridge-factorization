@@ -945,9 +945,8 @@ function addBulkRow(prefill) {
     setTimeout(() => row.classList.remove('bulk-row-flash'), 600);
   }
   updateBulkCount();
-  // Scroll to bottom
-  container.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
+
 
 function removeBulkRow(btn) {
   const row = btn.closest('.bulk-row');
