@@ -593,6 +593,9 @@ const QUICK_INGREDIENTS = [
   { name: '大根',         category: '野菜',      quantity: 1,   unit: '本' },
   { name: 'ピーマン',     category: '野菜',      quantity: 3,   unit: '個' },
   { name: 'しいたけ',     category: '野菜',      quantity: 4,   unit: '個' },
+  { name: 'しめじ',       category: '野菜',      quantity: 1,   unit: 'パック' },
+  { name: 'エリンギ',     category: '野菜',      quantity: 1,   unit: 'パック' },
+  { name: 'えのき',       category: '野菜',      quantity: 1,   unit: 'パック' },
   // 肉・魚
   { name: '豚肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
   { name: '鶏肉',         category: '肉・魚',    quantity: 300, unit: 'g' },
