@@ -1245,3 +1245,103 @@ a { text-decoration: none; color: inherit; }
 .recipe-card:nth-child(5)  { animation-delay: 0.19s; }
 .recipe-card:nth-child(6)  { animation-delay: 0.23s; }
 
+/* === SHOPPING RECOMMENDATIONS === */
+.rec-section {
+  margin-top: 20px;
+  border-top: 2px dashed var(--color-primary-light);
+  padding-top: 16px;
+}
+
+.rec-section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rec-section-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rec-card {
+  background: linear-gradient(135deg, #FFFAF0 0%, #FFF5F7 100%);
+  border: 1.5px solid var(--color-primary-light);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: cardIn 0.25s ease both;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.rec-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.rec-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rec-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.rec-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.rec-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.rec-badge-now {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.rec-badge-soon {
+  background: var(--color-warning-light);
+  color: #B87A00;
+  border: 1px solid var(--color-warning);
+}
+
+.rec-recipes {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.rec-more {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.rec-add-btn {
+  align-self: flex-end;
+}

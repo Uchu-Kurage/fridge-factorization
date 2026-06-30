@@ -1565,16 +1565,6 @@ function renderShoppingTab() {
   const unchecked = state.shoppingList.filter(i => !i.checked);
   const checked = state.shoppingList.filter(i => i.checked);
 
-  if (state.shoppingList.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🛒</div>
-        <p>買い物リストは空です</p>
-        <p class="empty-hint">メニュー提案から不足食材を追加できます</p>
-      </div>`;
-    return;
-  }
-
   function renderItem(item) {
     return `
       <div class="shopping-item ${item.checked ? 'checked' : ''}">
@@ -1589,23 +1579,164 @@ function renderShoppingTab() {
   }
 
   let html = '';
-  if (unchecked.length > 0) {
-    html += `<div class="section-title">🛒 購入予定 (${unchecked.length}品)</div>`;
-    html += `<div class="shopping-list">${unchecked.map(renderItem).join('')}</div>`;
-  }
-  if (checked.length > 0) {
+  if (state.shoppingList.length === 0) {
     html += `
-      <div class="section-title purchased-title">✅ 購入済み (${checked.length}品)</div>
-      <div class="shopping-list">${checked.map(renderItem).join('')}</div>
-      <div class="add-to-fridge-wrap">
-        <button class="btn btn-success btn-block" onclick="movePurchasedToFridgeUI()">
-          🧊 購入済みをまとめて冷蔵庫に追加
-        </button>
+      <div class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <p>買い物リストは空です</p>
+        <p class="empty-hint">メニュー提案から不足食材を追加できます</p>
       </div>`;
+  } else {
+    if (unchecked.length > 0) {
+      html += `<div class="section-title">🛒 購入予定 (${unchecked.length}品)</div>`;
+      html += `<div class="shopping-list">${unchecked.map(renderItem).join('')}</div>`;
+    }
+    if (checked.length > 0) {
+      html += `
+        <div class="section-title purchased-title">✅ 購入済み (${checked.length}品)</div>
+        <div class="shopping-list">${checked.map(renderItem).join('')}</div>
+        <div class="add-to-fridge-wrap">
+          <button class="btn btn-success btn-block" onclick="movePurchasedToFridgeUI()">
+            🧊 購入済みをまとめて冷蔵庫に追加
+          </button>
+        </div>`;
+    }
   }
+
+  // おすすめ食材セクション
+  html += renderShoppingRecommendations();
 
   container.innerHTML = html;
 }
+
+// === INGREDIENT RECOMMENDATIONS ===
+function getIngredientRecommendations() {
+  const allRecipes = getAllRecipes();
+
+  // 現在作れるレシピ数
+  const currentlyMakeable = new Set(
+    allRecipes.filter(r => getRecipeMatchInfo(r).canMake).map(r => r.id)
+  );
+
+  // 全レシピの必須食材から、冷蔵庫にないものを集める
+  const candidateMap = new Map(); // name -> { name, recipes: [{id, name, emoji, missingCount}] }
+
+  for (const recipe of allRecipes) {
+    if (currentlyMakeable.has(recipe.id)) continue; // 既に作れるものはスキップ
+
+    const info = getRecipeMatchInfo(recipe);
+    const missing = info.missing;
+
+    for (const mi of missing) {
+      const key = mi.name;
+      // 買い物リストに既にあるものはスキップ
+      const inShopping = state.shoppingList.some(s =>
+        s.name.toLowerCase() === key.toLowerCase() && !s.checked
+      );
+      if (inShopping) continue;
+
+      if (!candidateMap.has(key)) {
+        candidateMap.set(key, { name: key, recipes: [] });
+      }
+      candidateMap.get(key).recipes.push({
+        id: recipe.id,
+        name: recipe.name,
+        emoji: recipe.emoji,
+        currentMissing: missing.length,
+      });
+    }
+  }
+
+  // 「この食材を追加したら作れるようになるレシピ数」を計算
+  // ただし、他の不足食材がこの1品だけのレシピのみカウント（即座に作れるようになる）
+  const results = [];
+  for (const [, cand] of candidateMap) {
+    // 即座に作れるようになる（不足が1品＝この食材だけ）
+    const unlockNow = cand.recipes.filter(r => r.currentMissing === 1);
+    // あと少しで作れる（不足が2〜3品のうちの1つ）
+    const unlockSoon = cand.recipes.filter(r => r.currentMissing >= 2 && r.currentMissing <= 3);
+
+    if (unlockNow.length === 0 && unlockSoon.length === 0) continue;
+
+    results.push({
+      name: cand.name,
+      unlockNow,
+      unlockSoon,
+      score: unlockNow.length * 3 + unlockSoon.length, // 即座を重み付け
+    });
+  }
+
+  // スコア順に並べて上位10件
+  return results
+    .sort((a, b) => b.score - a.score || b.unlockNow.length - a.unlockNow.length)
+    .slice(0, 10);
+}
+
+function renderShoppingRecommendations() {
+  const recs = getIngredientRecommendations();
+
+  if (recs.length === 0) {
+    // 全部作れるか、食材が少なすぎる
+    return '';
+  }
+
+  const cards = recs.map(rec => {
+    const nowLabel = rec.unlockNow.length > 0
+      ? `<span class="rec-badge rec-badge-now">今すぐ +${rec.unlockNow.length}品</span>`
+      : '';
+    const soonLabel = rec.unlockSoon.length > 0
+      ? `<span class="rec-badge rec-badge-soon">あと少し +${rec.unlockSoon.length}品</span>`
+      : '';
+
+    // 代表レシピ名（最大3件）
+    const previewRecipes = [...rec.unlockNow, ...rec.unlockSoon].slice(0, 3);
+    const recipeNames = previewRecipes
+      .map(r => `${r.emoji} ${escapeHtml(r.name)}`)
+      .join('、');
+    const moreCount = (rec.unlockNow.length + rec.unlockSoon.length) - previewRecipes.length;
+
+    return `
+      <div class="rec-card">
+        <div class="rec-card-top">
+          <span class="rec-name">${escapeHtml(rec.name)}</span>
+          <div class="rec-badges">${nowLabel}${soonLabel}</div>
+        </div>
+        <div class="rec-recipes">${recipeNames}${moreCount > 0 ? `<span class="rec-more"> など${moreCount}品</span>` : ''}</div>
+        <button class="btn btn-secondary btn-sm rec-add-btn"
+          onclick="addRecToShopping('${escapeHtml(rec.name)}')">
+          🛒 リストに追加
+        </button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="rec-section">
+      <div class="rec-section-title">
+        💡 買うと広がるメニュー
+        <span class="rec-section-hint">購入でレシピが増える食材</span>
+      </div>
+      <div class="rec-list">${cards}</div>
+    </div>`;
+}
+
+function addRecToShopping(name) {
+  // QUICK_INGREDIENTSからデフォルト値を探す
+  const preset = QUICK_INGREDIENTS.find(q => q.name === name);
+  state.shoppingList.push({
+    id: generateId(),
+    name,
+    category: preset ? preset.category : 'その他',
+    quantity: preset ? preset.quantity : 1,
+    unit: preset ? preset.unit : '個',
+    checked: false,
+    addedAt: Date.now(),
+  });
+  saveState();
+  renderShoppingTab();
+  showToast(`${name} を買い物リストに追加しました！`, 'success');
+}
+
+
 
 function toggleShoppingItem(id, checked) {
   const item = state.shoppingList.find(i => i.id === id);
