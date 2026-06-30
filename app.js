@@ -569,6 +569,67 @@ const BUILT_IN_RECIPES = [
   },
 ];
 
+// === QUICK INGREDIENT PRESETS ===
+const QUICK_INGREDIENTS = [
+  // 野菜
+  { name: '玉ねぎ',       category: '野菜',      quantity: 3,   unit: '個' },
+  { name: 'にんじん',     category: '野菜',      quantity: 2,   unit: '本' },
+  { name: 'じゃがいも',   category: '野菜',      quantity: 4,   unit: '個' },
+  { name: 'キャベツ',     category: '野菜',      quantity: 1,   unit: '個' },
+  { name: 'トマト',       category: '野菜',      quantity: 3,   unit: '個' },
+  { name: 'きゅうり',     category: '野菜',      quantity: 2,   unit: '本' },
+  { name: 'もやし',       category: '野菜',      quantity: 1,   unit: '袋' },
+  { name: 'ほうれん草',   category: '野菜',      quantity: 1,   unit: '束' },
+  { name: 'ネギ',         category: '野菜',      quantity: 2,   unit: '本' },
+  { name: 'にんにく',     category: '野菜',      quantity: 1,   unit: '個' },
+  { name: 'しょうが',     category: '野菜',      quantity: 1,   unit: '個' },
+  { name: 'ごぼう',       category: '野菜',      quantity: 1,   unit: '本' },
+  { name: '大根',         category: '野菜',      quantity: 1,   unit: '本' },
+  { name: 'ピーマン',     category: '野菜',      quantity: 3,   unit: '個' },
+  { name: 'しいたけ',     category: '野菜',      quantity: 4,   unit: '個' },
+  // 肉・魚
+  { name: '豚肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
+  { name: '鶏肉',         category: '肉・魚',    quantity: 300, unit: 'g' },
+  { name: '牛肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
+  { name: '豚ひき肉',     category: '肉・魚',    quantity: 200, unit: 'g' },
+  { name: '鶏ひき肉',     category: '肉・魚',    quantity: 200, unit: 'g' },
+  { name: 'ベーコン',     category: '肉・魚',    quantity: 100, unit: 'g' },
+  { name: '鮭',           category: '肉・魚',    quantity: 2,   unit: '枚' },
+  // 卵・乳製品
+  { name: '卵',           category: '卵・乳製品', quantity: 6,   unit: '個' },
+  { name: '牛乳',         category: '卵・乳製品', quantity: 1,   unit: 'L' },
+  { name: 'バター',       category: '卵・乳製品', quantity: 200, unit: 'g' },
+  { name: '生クリーム',   category: '卵・乳製品', quantity: 200, unit: 'ml' },
+  { name: '豆腐',         category: '卵・乳製品', quantity: 1,   unit: '個' },
+  // 調味料
+  { name: '醤油',         category: '調味料',    quantity: 300, unit: 'ml' },
+  { name: 'みりん',       category: '調味料',    quantity: 200, unit: 'ml' },
+  { name: '料理酒',       category: '調味料',    quantity: 200, unit: 'ml' },
+  { name: '砂糖',         category: '調味料',    quantity: 200, unit: 'g' },
+  { name: '塩',           category: '調味料',    quantity: 100, unit: 'g' },
+  { name: 'こしょう',     category: '調味料',    quantity: 1,   unit: '個' },
+  { name: 'ごま油',       category: '調味料',    quantity: 100, unit: 'ml' },
+  { name: 'オリーブオイル', category: '調味料',  quantity: 200, unit: 'ml' },
+  { name: '味噌',         category: '調味料',    quantity: 200, unit: 'g' },
+  { name: 'ケチャップ',   category: '調味料',    quantity: 1,   unit: '個' },
+  { name: 'マヨネーズ',   category: '調味料',    quantity: 1,   unit: '個' },
+  { name: '豆板醤',       category: '調味料',    quantity: 1,   unit: '個' },
+  { name: 'めんつゆ',     category: '調味料',    quantity: 200, unit: 'ml' },
+  { name: 'コンソメ',     category: '調味料',    quantity: 1,   unit: '個' },
+  // 乾物・缶詰
+  { name: 'パスタ',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
+  { name: 'そば',         category: '乾物・缶詰', quantity: 200, unit: 'g' },
+  { name: '春雨',         category: '乾物・缶詰', quantity: 50,  unit: 'g' },
+  { name: 'ツナ缶',       category: '乾物・缶詰', quantity: 1,   unit: '缶' },
+  { name: 'ひじき',       category: '乾物・缶詰', quantity: 20,  unit: 'g' },
+  { name: '薄力粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
+  // その他
+  { name: 'ご飯',         category: 'その他',    quantity: 2,   unit: '個' },
+  { name: '油揚げ',       category: 'その他',    quantity: 2,   unit: '枚' },
+  { name: '餃子の皮',     category: 'その他',    quantity: 30,  unit: '枚' },
+  { name: '塩昆布',       category: 'その他',    quantity: 20,  unit: 'g' },
+];
+
 // === STATE ===
 let state = {
   ingredients: [],
@@ -749,7 +810,206 @@ function closeModal() {
   currentModal = null;
 }
 
+// ==================== MODAL: BULK ADD ====================
+let bulkRowCounter = 0;
+
+const QUICK_CHIP_CATEGORIES = [
+  { label: '🥦 野菜', key: '野菜' },
+  { label: '🥩 肉・魚', key: '肉・魚' },
+  { label: '🥚 卵・乳製品', key: '卵・乳製品' },
+  { label: '🧂 調味料', key: '調味料' },
+  { label: '🥫 乾物・缶詰', key: '乾物・缶詰' },
+  { label: '🍱 その他', key: 'その他' },
+];
+
+function showBulkAddModal() {
+  bulkRowCounter = 0;
+
+  const chipsByCategory = QUICK_CHIP_CATEGORIES.map(({ label, key }) => {
+    const chips = QUICK_INGREDIENTS.filter(qi => qi.category === key);
+    if (chips.length === 0) return '';
+    return `
+      <div class="quick-chip-group">
+        <div class="quick-chip-group-label">${label}</div>
+        <div class="quick-chip-row">
+          ${chips.map((qi, _) => {
+            const globalIdx = QUICK_INGREDIENTS.indexOf(qi);
+            const inFridge = state.ingredients.some(fi =>
+              fi.name.toLowerCase() === qi.name.toLowerCase()
+            );
+            return `<button class="quick-chip ${inFridge ? 'quick-chip-have' : ''}"
+              onclick="quickAddBulkRow(${globalIdx})" title="${qi.quantity}${qi.unit}">
+              ${escapeHtml(qi.name)}${inFridge ? ' ✓' : ''}
+            </button>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>📦 食材を一括追加</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body bulk-modal-body">
+      <div class="quick-chips-section">
+        <div class="form-section-title" style="margin:0 0 8px;">🌟 よく使う食材をタップ</div>
+        <div class="quick-chips-scroll">
+          ${chipsByCategory}
+        </div>
+      </div>
+      <div class="bulk-list-header">
+        <span class="form-section-title" style="margin:0;">📝 入力リスト</span>
+        <span id="bulk-count-badge" class="stat-chip">0品</span>
+      </div>
+      <div id="bulk-rows-container"></div>
+      <button class="btn btn-ghost btn-block bulk-add-row-btn" onclick="addBulkRowEmpty()">
+        ＋ 行を追加
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitBulkAdd()">一括登録 🌟</button>
+    </div>
+  `);
+
+  // Start with 3 empty rows
+  addBulkRowEmpty();
+  addBulkRowEmpty();
+  addBulkRowEmpty();
+}
+
+function addBulkRowEmpty() {
+  addBulkRow(null);
+}
+
+function quickAddBulkRow(globalIdx) {
+  const qi = QUICK_INGREDIENTS[globalIdx];
+
+  // Find an empty row to fill in
+  const rows = document.querySelectorAll('#bulk-rows-container .bulk-row');
+  for (const row of rows) {
+    const nameInput = row.querySelector('.bulk-name');
+    if (!nameInput.value.trim()) {
+      nameInput.value = qi.name;
+      row.querySelector('.bulk-cat').value = qi.category;
+      row.querySelector('.bulk-qty').value = qi.quantity;
+      row.querySelector('.bulk-unit').value = qi.unit;
+      nameInput.focus();
+      updateBulkCount();
+      // Highlight the filled row briefly
+      row.classList.add('bulk-row-flash');
+      setTimeout(() => row.classList.remove('bulk-row-flash'), 600);
+      return;
+    }
+  }
+  // No empty row — create one with this ingredient pre-filled
+  addBulkRow(qi);
+}
+
+function addBulkRow(prefill) {
+  const id = bulkRowCounter++;
+  const container = document.getElementById('bulk-rows-container');
+  if (!container) return;
+
+  const unitOptions = UNITS.map(u =>
+    `<option value="${u}" ${prefill && u === prefill.unit ? 'selected' : ''}>${u}</option>`
+  ).join('');
+  const catOptions = INGREDIENT_CATEGORIES.map(c =>
+    `<option value="${c}" ${prefill && c === prefill.category ? 'selected' : ''}>${CATEGORY_EMOJIS[c]} ${c}</option>`
+  ).join('');
+
+  const row = document.createElement('div');
+  row.className = 'bulk-row';
+  row.dataset.rowId = id;
+  row.innerHTML = `
+    <div class="bulk-row-top">
+      <input
+        type="text"
+        class="form-input bulk-name"
+        placeholder="食材名"
+        value="${prefill ? escapeHtml(prefill.name) : ''}"
+        oninput="updateBulkCount()"
+      />
+      <button class="btn-icon danger bulk-remove-btn" onclick="removeBulkRow(this)" title="削除">✕</button>
+    </div>
+    <div class="bulk-row-bottom">
+      <select class="form-select bulk-cat">${catOptions}</select>
+      <input type="number" class="form-input bulk-qty" value="${prefill ? prefill.quantity : 1}" min="0" step="0.1" />
+      <select class="form-select bulk-unit">${unitOptions}</select>
+    </div>
+  `;
+  container.appendChild(row);
+  if (prefill) {
+    row.classList.add('bulk-row-flash');
+    setTimeout(() => row.classList.remove('bulk-row-flash'), 600);
+  }
+  updateBulkCount();
+  // Scroll to bottom
+  container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function removeBulkRow(btn) {
+  const row = btn.closest('.bulk-row');
+  if (row) { row.remove(); updateBulkCount(); }
+}
+
+function updateBulkCount() {
+  const badge = document.getElementById('bulk-count-badge');
+  if (!badge) return;
+  const inputs = document.querySelectorAll('#bulk-rows-container .bulk-name');
+  const count = Array.from(inputs).filter(i => i.value.trim()).length;
+  badge.textContent = `${count}品`;
+  badge.style.background = count > 0 ? 'var(--color-success-light)' : '';
+  badge.style.color = count > 0 ? 'var(--color-success)' : '';
+}
+
+function submitBulkAdd() {
+  const rows = document.querySelectorAll('#bulk-rows-container .bulk-row');
+  const newItems = [];
+  const skipped = [];
+
+  for (const row of rows) {
+    const name = row.querySelector('.bulk-name').value.trim();
+    if (!name) continue;
+    const category = row.querySelector('.bulk-cat').value;
+    const quantity = parseFloat(row.querySelector('.bulk-qty').value) || 1;
+    const unit = row.querySelector('.bulk-unit').value;
+
+    // If same name + same unit already exists → merge quantity
+    const existing = state.ingredients.find(fi =>
+      fi.name.toLowerCase() === name.toLowerCase() && fi.unit === unit
+    );
+    if (existing) {
+      existing.quantity += quantity;
+      skipped.push(name);
+    } else {
+      newItems.push({ id: generateId(), name, category, quantity, unit, addedAt: Date.now() });
+    }
+  }
+
+  if (newItems.length === 0 && skipped.length === 0) {
+    showToast('食材名を入力してください', 'error');
+    return;
+  }
+
+  state.ingredients.push(...newItems);
+  saveState();
+  closeModal();
+  renderFridgeTab();
+  renderSuggestTab();
+
+  if (skipped.length > 0 && newItems.length > 0) {
+    showToast(`${newItems.length}品を追加・${skipped.length}品を数量更新しました！`, 'success');
+  } else if (skipped.length > 0) {
+    showToast(`${skipped.length}品の数量を更新しました！`, 'success');
+  } else {
+    showToast(`${newItems.length}品を追加しました！🎉`, 'success');
+  }
+}
+
 // ==================== MODAL: ADD INGREDIENT ====================
+
 function showAddIngredientModal(prefillName = '', prefillCategory = 'その他') {
   const unitOptions = UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
@@ -1511,6 +1771,9 @@ function init() {
 
   // Add ingredient button
   document.getElementById('btn-add-ingredient').addEventListener('click', () => showAddIngredientModal());
+
+  // Bulk add button
+  document.getElementById('btn-bulk-add').addEventListener('click', () => showBulkAddModal());
 
   // Add shopping item button
   document.getElementById('btn-add-shopping').addEventListener('click', () => showAddShoppingModal());
