@@ -567,6 +567,171 @@ const BUILT_IN_RECIPES = [
     ],
     isCustom: false,
   },
+  {
+    id: 'r031', name: '小松菜とえのきのおひたし', category: '和食', emoji: '🥬',
+    description: '電子レンジで簡単！常備菜にもぴったり。',
+    requiredIngredients: [
+      { name: '小松菜', quantity: 1, unit: '束', optional: false },
+      { name: 'えのき', quantity: 1, unit: 'パック', optional: false },
+      { name: 'めんつゆ', quantity: 2, unit: '大さじ', optional: false },
+    ],
+    steps: [
+      '小松菜とえのきを食べやすい大きさに切る。',
+      '耐熱容器に入れてラップをし、レンジで3分加熱する。',
+      'めんつゆで和えて完成！',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r032', name: '空芯菜のニンニク炒め', category: '中華', emoji: '🌿',
+    description: 'シャキシャキ食感とニンニクの香りが食欲をそそる！',
+    requiredIngredients: [
+      { name: '空芯菜', quantity: 1, unit: '束', optional: false },
+      { name: 'にんにく', quantity: 1, unit: 'かけ', optional: false },
+      { name: 'ごま油', quantity: 1, unit: '大さじ', optional: false },
+      { name: '塩', quantity: 1, unit: '少々', optional: false },
+      { name: 'こしょう', quantity: 1, unit: '少々', optional: false },
+    ],
+    steps: [
+      '空芯菜はざく切り、にんにくはみじん切りにする。',
+      'フライパンにごま油とにんにくを熱し、香りを出す。',
+      '空芯菜を強火でさっと炒め、塩こしょうで味を調える。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r033', name: 'とうもろこしのバター醤油焼き', category: '和食', emoji: '🌽',
+    description: '屋台の味を家で！香ばしい匂いがたまらない。',
+    requiredIngredients: [
+      { name: 'とうもろこし', quantity: 1, unit: '本', optional: false },
+      { name: 'バター', quantity: 10, unit: 'g', optional: false },
+      { name: '醤油', quantity: 1, unit: '大さじ', optional: false },
+    ],
+    steps: [
+      'とうもろこしを茹でるかレンジで加熱し、食べやすい大きさに切る。',
+      'フライパンにバターを熱し、とうもろこしを転がしながら焼く。',
+      '焼き色がついたら醤油を回しかけ、香ばしく仕上げる。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r034', name: 'アスパラガスとベーコンの炒め物', category: '洋食', emoji: '🥓',
+    description: 'お弁当のおかずにも最適なお手軽レシピ。',
+    requiredIngredients: [
+      { name: 'アスパラガス', quantity: 1, unit: '束', optional: false },
+      { name: 'ベーコン', quantity: 50, unit: 'g', optional: false },
+      { name: 'オリーブオイル', quantity: 1, unit: '大さじ', optional: false },
+      { name: '塩', quantity: 1, unit: '少々', optional: false },
+      { name: 'こしょう', quantity: 1, unit: '少々', optional: false },
+    ],
+    steps: [
+      'アスパラガスは根元の硬い部分を切り落とし、斜め切りにする。ベーコンも切る。',
+      'フライパンにオリーブオイルを熱し、ベーコンを炒める。',
+      'アスパラガスを加えてさらに炒め、塩こしょうで味を調える。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r035', name: 'ブロッコリーとエリンギのガーリック炒め', category: '洋食', emoji: '🥦',
+    description: 'にんにくの風味が食欲をそそる副菜。',
+    requiredIngredients: [
+      { name: 'ブロッコリー', quantity: 1, unit: '個', optional: false },
+      { name: 'エリンギ', quantity: 1, unit: 'パック', optional: false },
+      { name: 'にんにく', quantity: 1, unit: 'かけ', optional: false },
+      { name: 'オリーブオイル', quantity: 1, unit: '大さじ', optional: false },
+      { name: '塩', quantity: 1, unit: '少々', optional: false },
+    ],
+    steps: [
+      'ブロッコリーは小房に分け、下茹でする。エリンギは薄切りにする。',
+      'フライパンにオリーブオイルとみじん切りしたにんにくを入れて火にかける。',
+      '香りが立ったらブロッコリーとエリンギを炒め、塩で味を調える。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r036', name: '豚肉とニンニクの芽のスタミナ炒め', category: '中華', emoji: '💪',
+    description: 'ご飯がすすむがっつりスタミナメニュー！',
+    requiredIngredients: [
+      { name: '豚肉', quantity: 150, unit: 'g', optional: false },
+      { name: 'ニンニクの芽', quantity: 1, unit: '束', optional: false },
+      { name: 'ごま油', quantity: 1, unit: '大さじ', optional: false },
+      { name: '醤油', quantity: 1, unit: '大さじ', optional: false },
+      { name: '料理酒', quantity: 1, unit: '大さじ', optional: false },
+    ],
+    steps: [
+      '豚肉は一口大に切り、ニンニクの芽は4cmの長さに切る。',
+      'フライパンにごま油を熱し、豚肉を炒める。',
+      '肉の色が変わったらニンニクの芽を加え、調味料で炒め合わせる。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r037', name: 'ピーマンと豚肉のチンジャオロース風', category: '中華', emoji: '🫑',
+    description: 'しめじでカサ増し！オイスターソースなしでも美味しく。',
+    requiredIngredients: [
+      { name: '豚肉', quantity: 150, unit: 'g', optional: false },
+      { name: 'ピーマン', quantity: 3, unit: '個', optional: false },
+      { name: 'しめじ', quantity: 1, unit: 'パック', optional: false },
+      { name: 'ごま油', quantity: 1, unit: '大さじ', optional: false },
+      { name: '醤油', quantity: 1.5, unit: '大さじ', optional: false },
+      { name: '砂糖', quantity: 1, unit: '小さじ', optional: false },
+    ],
+    steps: [
+      '豚肉とピーマンは細切りにする。しめじは石づきを取ってほぐす。',
+      'フライパンにごま油を熱し、豚肉を炒める。',
+      'ピーマンとしめじを加えて炒め、醤油と砂糖で味付けする。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r038', name: 'きのこたっぷり和風うどん', category: '和食', emoji: '🍜',
+    description: 'きのこの出汁が効いた優しい味のうどん。',
+    requiredIngredients: [
+      { name: 'うどん', quantity: 1, unit: '玉', optional: false },
+      { name: 'しめじ', quantity: 0.5, unit: 'パック', optional: false },
+      { name: 'えのき', quantity: 0.5, unit: 'パック', optional: false },
+      { name: 'ネギ', quantity: 1, unit: '本', optional: false },
+      { name: 'めんつゆ', quantity: 50, unit: 'ml', optional: false },
+    ],
+    steps: [
+      'きのこ類は石づきを取ってほぐし、ネギは小口切りにする。',
+      '鍋に水とめんつゆを入れて沸かし、きのこを煮る。',
+      'うどんを加えてひと煮立ちさせ、器に盛ってネギを散らす。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r039', name: '納豆チーズオムレツ', category: '和食', emoji: '🧀',
+    description: '意外な組み合わせがクセになる！とろとろオムレツ。',
+    requiredIngredients: [
+      { name: '納豆', quantity: 1, unit: 'パック', optional: false },
+      { name: '卵', quantity: 2, unit: '個', optional: false },
+      { name: 'チーズ', quantity: 30, unit: 'g', optional: false },
+      { name: 'バター', quantity: 10, unit: 'g', optional: false },
+    ],
+    steps: [
+      '納豆は付属のタレを混ぜておく。卵はボウルに溶きほぐし、チーズを加える。',
+      'フライパンにバターを熱し、卵液を流し込む。',
+      '半熟になったら中央に納豆をのせ、卵で包み込むように半分に折る。',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r040', name: 'クリーミーミルクスープ', category: '洋食', emoji: '🥛',
+    description: '牛乳でまろやか！心温まるスープ。',
+    requiredIngredients: [
+      { name: '牛乳', quantity: 300, unit: 'ml', optional: false },
+      { name: 'ベーコン', quantity: 50, unit: 'g', optional: false },
+      { name: '玉ねぎ', quantity: 0.5, unit: '個', optional: false },
+      { name: 'コンソメ', quantity: 1, unit: '個', optional: false },
+    ],
+    steps: [
+      'ベーコンと玉ねぎは細切りにする。',
+      '鍋でベーコンと玉ねぎを炒め、玉ねぎが透き通ってきたら水100mlとコンソメを加える。',
+      '牛乳を加え、沸騰させないように温めたら完成！',
+    ],
+    isCustom: false,
+  },
 ];
 
 // === QUICK INGREDIENT PRESETS ===
