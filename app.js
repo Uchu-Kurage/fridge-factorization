@@ -732,6 +732,24 @@ const BUILT_IN_RECIPES = [
     ],
     isCustom: false,
   },
+  {
+    id: 'r041', name: '回鍋肉', category: '中華', emoji: '🥢',
+    description: '甜麺醤のコクと香りがたまらない！ご飯がすすむ定番中華。',
+    requiredIngredients: [
+      { name: '豚肉', quantity: 150, unit: 'g', optional: false },
+      { name: 'キャベツ', quantity: 0.25, unit: '個', optional: false },
+      { name: 'ピーマン', quantity: 2, unit: '個', optional: false },
+      { name: '甜麺醤', quantity: 1, unit: '大さじ', optional: false },
+      { name: 'ごま油', quantity: 1, unit: '大さじ', optional: false },
+    ],
+    steps: [
+      '豚肉は一口大に、キャベツとピーマンはざく切りにする。',
+      'フライパンにごま油を熱し、豚肉を炒める。',
+      '肉の色が変わったらキャベツとピーマンを加えて炒める。',
+      '野菜がしんなりしたら甜麺醤を加えて全体に絡め、完成！',
+    ],
+    isCustom: false,
+  },
 ];
 
 // === QUICK INGREDIENT PRESETS ===
@@ -792,6 +810,7 @@ const QUICK_INGREDIENTS = [
   { name: '豆板醤',       category: '調味料',    quantity: 1,   unit: '個' },
   { name: 'めんつゆ',     category: '調味料',    quantity: 200, unit: 'ml' },
   { name: 'コンソメ',     category: '調味料',    quantity: 1,   unit: '個' },
+  { name: '甜麺醤',       category: '調味料',    quantity: 1,   unit: '個' },
   // 乾物・缶詰
   { name: 'パスタ',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
   { name: 'そば',         category: '乾物・缶詰', quantity: 200, unit: 'g' },
