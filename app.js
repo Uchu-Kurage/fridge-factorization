@@ -1231,6 +1231,84 @@ function submitBulkAdd() {
   }
 }
 
+// ==================== QTY SLIDER COMPONENT ====================
+
+// 単位ごとのスライダー設定
+const QTY_SLIDER_CONFIG = {
+  // 単位 -> { max, step }
+  'g':    { max: 1000, step: 10   },
+  'kg':   { max: 10,   step: 0.1  },
+  'ml':   { max: 1000, step: 10   },
+  'L':    { max: 10,   step: 0.1  },
+  '枚':   { max: 50,   step: 1    },
+  '本':   { max: 20,   step: 1    },
+  '個':   { max: 30,   step: 1    },
+  '袋':   { max: 10,   step: 1    },
+  '缶':   { max: 10,   step: 1    },
+  'パック': { max: 10, step: 1    },
+  '束':   { max: 10,   step: 1    },
+  '大さじ': { max: 10, step: 0.5  },
+  '小さじ': { max: 10, step: 0.5  },
+  '少々':  { max: 5,   step: 1    },
+  '適量':  { max: 5,   step: 1    },
+};
+
+function getSliderConfig(unit) {
+  return QTY_SLIDER_CONFIG[unit] || { max: 100, step: 1 };
+}
+
+// スライダーと数値入力を同期させる HTML を返す
+function buildQtySlider(numId, sliderId, initialVal, unit) {
+  const cfg = getSliderConfig(unit);
+  const val = Math.min(initialVal, cfg.max);
+  return `
+    <div class="qty-slider-wrap">
+      <div class="qty-slider-top">
+        <input type="number" id="${numId}" class="form-input qty-num-input"
+          value="${val}" min="0" step="${cfg.step}"
+          oninput="syncQtyFromNum('${numId}','${sliderId}')" />
+        <span class="qty-slider-unit" id="${sliderId}-unit">${escapeHtml(unit)}</span>
+      </div>
+      <input type="range" id="${sliderId}" class="qty-slider"
+        min="0" max="${cfg.max}" step="${cfg.step}" value="${val}"
+        oninput="syncQtyFromSlider('${numId}','${sliderId}')" />
+      <div class="qty-slider-labels">
+        <span>0</span><span>${cfg.max / 2}</span><span>${cfg.max}</span>
+      </div>
+    </div>`;
+}
+
+function syncQtyFromNum(numId, sliderId) {
+  const num = document.getElementById(numId);
+  const sld = document.getElementById(sliderId);
+  if (!num || !sld) return;
+  const v = parseFloat(num.value) || 0;
+  sld.value = Math.min(v, parseFloat(sld.max));
+}
+
+function syncQtyFromSlider(numId, sliderId) {
+  const num = document.getElementById(numId);
+  const sld = document.getElementById(sliderId);
+  if (!num || !sld) return;
+  num.value = sld.value;
+}
+
+// 単位変更時にスライダー設定を更新
+function updateSliderOnUnitChange(selectEl, numId, sliderId) {
+  const unit = selectEl.value;
+  const cfg = getSliderConfig(unit);
+  const sld = document.getElementById(sliderId);
+  const num = document.getElementById(numId);
+  const unitLabel = document.getElementById(sliderId + '-unit');
+  if (sld) {
+    sld.max  = cfg.max;
+    sld.step = cfg.step;
+    sld.value = Math.min(parseFloat(num?.value || 0), cfg.max);
+  }
+  if (num) num.step = cfg.step;
+  if (unitLabel) unitLabel.textContent = unit;
+}
+
 // ==================== MODAL: ADD INGREDIENT ====================
 
 function showAddIngredientModal(prefillName = '', prefillCategory = 'その他') {
@@ -1253,15 +1331,13 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
         <label>カテゴリ <span class="required">*</span></label>
         <select id="ing-category" class="form-select">${catOptions}</select>
       </div>
-      <div class="form-row">
-        <div class="form-group flex-1">
-          <label>数量 <span class="required">*</span></label>
-          <input type="number" id="ing-qty" class="form-input" value="1" min="0" step="0.1" />
-        </div>
-        <div class="form-group flex-1">
-          <label>単位 <span class="required">*</span></label>
-          <select id="ing-unit" class="form-select">${unitOptions}</select>
-        </div>
+      <div class="form-group">
+        <label>単位 <span class="required">*</span></label>
+        <select id="ing-unit" class="form-select" onchange="updateSliderOnUnitChange(this,'ing-qty','ing-qty-slider')">${unitOptions}</select>
+      </div>
+      <div class="form-group">
+        <label>数量 <span class="required">*</span></label>
+        ${buildQtySlider('ing-qty', 'ing-qty-slider', 1, '個')}
       </div>
     </div>
     <div class="modal-footer">
@@ -1408,15 +1484,13 @@ function showEditIngredientModal(id) {
         <label>カテゴリ</label>
         <select id="edit-ing-category" class="form-select">${catOptions}</select>
       </div>
-      <div class="form-row">
-        <div class="form-group flex-1">
-          <label>数量</label>
-          <input type="number" id="edit-ing-qty" class="form-input" value="${ing.quantity}" min="0" step="0.1" />
-        </div>
-        <div class="form-group flex-1">
-          <label>単位</label>
-          <select id="edit-ing-unit" class="form-select">${unitOptions}</select>
-        </div>
+      <div class="form-group">
+        <label>単位</label>
+        <select id="edit-ing-unit" class="form-select" onchange="updateSliderOnUnitChange(this,'edit-ing-qty','edit-ing-qty-slider')">${unitOptions}</select>
+      </div>
+      <div class="form-group">
+        <label>数量</label>
+        ${buildQtySlider('edit-ing-qty', 'edit-ing-qty-slider', ing.quantity, ing.unit)}
       </div>
     </div>
     <div class="modal-footer">
