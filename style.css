@@ -1668,3 +1668,25 @@ a { text-decoration: none; color: inherit; }
   color: var(--text-muted);
   padding: 0 2px;
 }
+
+/* === AUTOFILL HINT === */
+.ing-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.autofill-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-success);
+  min-height: 18px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.autofill-hint-active {
+  opacity: 1;
+  transform: translateY(0);
+}

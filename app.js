@@ -1325,7 +1325,12 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
     <div class="modal-body">
       <div class="form-group">
         <label>食材名 <span class="required">*</span></label>
-        <input type="text" id="ing-name" class="form-input" placeholder="例: 卵" value="${escapeHtml(prefillName)}" />
+        <div class="ing-name-wrap">
+          <input type="text" id="ing-name" class="form-input" placeholder="例: 卵"
+            value="${escapeHtml(prefillName)}"
+            oninput="autoFillIngUnit(this)" />
+          <span id="ing-autofill-hint" class="autofill-hint"></span>
+        </div>
       </div>
       <div class="form-group">
         <label>カテゴリ <span class="required">*</span></label>
@@ -1345,7 +1350,10 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
       <button class="btn btn-primary" onclick="submitAddIngredient()">追加する 🌟</button>
     </div>
   `);
-  document.getElementById('ing-name').focus();
+  const nameEl = document.getElementById('ing-name');
+  nameEl.focus();
+  // prefillがある場合は初期値も自動入力
+  if (prefillName) autoFillIngUnit(nameEl);
 }
 
 function submitAddIngredient() {
@@ -1362,6 +1370,82 @@ function submitAddIngredient() {
   closeModal();
   renderFridgeTab();
   showToast(`${name} を追加しました！`, 'success');
+}
+
+// 食材名から単位・数量・カテゴリを自動推定して入力
+function autoFillIngUnit(nameEl) {
+  const name = nameEl.value.trim();
+  const hint = document.getElementById('ing-autofill-hint');
+
+  if (!name) {
+    if (hint) hint.textContent = '';
+    return;
+  }
+
+  const lower = name.toLowerCase();
+
+  // 優先度１: QUICK_INGREDIENTS 完全一致
+  let match = QUICK_INGREDIENTS.find(q => q.name.toLowerCase() === lower);
+  let matchSource = 'よく使う食材';
+
+  // 優先度２: レシピ食材完全一致
+  if (!match) {
+    for (const recipe of getAllRecipes()) {
+      for (const ri of recipe.requiredIngredients) {
+        if (ri.name.toLowerCase() === lower) {
+          match = { name: ri.name, unit: ri.unit, quantity: ri.quantity, category: 'その他' };
+          matchSource = `レシピ「${recipe.name}」`;
+          break;
+        }
+      }
+      if (match) break;
+    }
+  }
+
+  // 優先度３: QUICK_INGREDIENTS 部分一致
+  if (!match) {
+    match = QUICK_INGREDIENTS.find(q =>
+      q.name.toLowerCase().includes(lower) || lower.includes(q.name.toLowerCase())
+    );
+    if (match) matchSource = 'よく使う食材(部分一致)';
+  }
+
+  if (!match) {
+    if (hint) hint.textContent = '';
+    return;
+  }
+
+  // 単位セレクトを更新
+  const unitSel = document.getElementById('ing-unit');
+  if (unitSel) {
+    unitSel.value = match.unit;
+    // スライダーも更新
+    updateSliderOnUnitChange(unitSel, 'ing-qty', 'ing-qty-slider');
+  }
+
+  // 数量を更新
+  const qtyNum = document.getElementById('ing-qty');
+  const qtySld = document.getElementById('ing-qty-slider');
+  if (qtyNum && match.quantity) {
+    qtyNum.value = match.quantity;
+    if (qtySld) qtySld.value = Math.min(match.quantity, parseFloat(qtySld.max));
+  }
+
+  // カテゴリを更新（QUICK_INGREDIENTSにカテゴリがある場合）
+  if (match.category && match.category !== 'その他') {
+    const catSel = document.getElementById('ing-category');
+    if (catSel) catSel.value = match.category;
+  }
+
+  // ヒントを表示
+  if (hint) {
+    hint.textContent = `✨ ${matchSource}の単位を自動設定しました`;
+    hint.className = 'autofill-hint autofill-hint-active';
+    clearTimeout(hint._timer);
+    hint._timer = setTimeout(() => {
+      hint.className = 'autofill-hint';
+    }, 2500);
+  }
 }
 
 // ==================== MODAL: CONSUME INGREDIENT ====================
