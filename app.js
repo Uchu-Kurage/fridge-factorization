@@ -858,6 +858,8 @@ function saveState() {
   }
   // Update regular alert badge
   updateRegularAlertBadge();
+  // Update expiry alert badge
+  updateExpiryAlertBadge();
 }
 
 function loadState() {
@@ -1344,6 +1346,14 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
         <label>数量 <span class="required">*</span></label>
         ${buildQtySlider('ing-qty', 'ing-qty-slider', 1, '個')}
       </div>
+      <div class="form-group">
+        <label>賞味期限 <span class="optional-label">（任意）</span></label>
+        <div class="expiry-date-wrap">
+          <input type="date" id="ing-expiry" class="form-input expiry-date-input" />
+          <button type="button" class="btn btn-ghost btn-sm expiry-clear-btn"
+            onclick="document.getElementById('ing-expiry').value=''">クリア</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
@@ -1365,7 +1375,11 @@ function submitAddIngredient() {
   if (!name) { showToast('食材名を入力してください', 'error'); return; }
   if (isNaN(quantity) || quantity < 0) { showToast('数量を正しく入力してください', 'error'); return; }
 
-  state.ingredients.push({ id: generateId(), name, category, quantity, unit, addedAt: Date.now() });
+  state.ingredients.push({
+    id: generateId(), name, category, quantity, unit,
+    expiryDate: document.getElementById('ing-expiry')?.value || null,
+    addedAt: Date.now(),
+  });
   saveState();
   closeModal();
   renderFridgeTab();
@@ -1576,6 +1590,15 @@ function showEditIngredientModal(id) {
         <label>数量</label>
         ${buildQtySlider('edit-ing-qty', 'edit-ing-qty-slider', ing.quantity, ing.unit)}
       </div>
+      <div class="form-group">
+        <label>賞味期限 <span class="optional-label">（任意）</span></label>
+        <div class="expiry-date-wrap">
+          <input type="date" id="edit-ing-expiry" class="form-input expiry-date-input"
+            value="${ing.expiryDate || ''}" />
+          <button type="button" class="btn btn-ghost btn-sm expiry-clear-btn"
+            onclick="document.getElementById('edit-ing-expiry').value=''">クリア</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
@@ -1588,10 +1611,11 @@ function submitEditIngredient(id) {
   const ing = state.ingredients.find(i => i.id === id);
   if (!ing) return;
 
-  ing.name = document.getElementById('edit-ing-name').value.trim();
+  ing.name     = document.getElementById('edit-ing-name').value.trim();
   ing.category = document.getElementById('edit-ing-category').value;
   ing.quantity = parseFloat(document.getElementById('edit-ing-qty').value);
-  ing.unit = document.getElementById('edit-ing-unit').value;
+  ing.unit     = document.getElementById('edit-ing-unit').value;
+  ing.expiryDate = document.getElementById('edit-ing-expiry')?.value || null;
 
   if (!ing.name) { showToast('食材名を入力してください', 'error'); return; }
   saveState();
@@ -1871,6 +1895,86 @@ function deleteCustomRecipe(id) {
 }
 
 // ==================== RENDER: FRIDGE TAB ====================
+// ==================== EXPIRY DATE LOGIC ====================
+
+const EXPIRY_WARN_DAYS = 3; // 期限間近と判断する日数
+
+function getExpiryStatus(ing) {
+  if (!ing.expiryDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(ing.expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  const diffMs = expiry - today;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0)  return { status: 'expired', diffDays, label: `${Math.abs(diffDays)}日超過` };
+  if (diffDays === 0) return { status: 'today',   diffDays, label: '今日まで' };
+  if (diffDays <= EXPIRY_WARN_DAYS) return { status: 'soon', diffDays, label: `あと${diffDays}日` };
+  return { status: 'ok', diffDays, label: `あと${diffDays}日` };
+}
+
+function getExpiryAlerts() {
+  return state.ingredients
+    .map(ing => ({ ing, expiry: getExpiryStatus(ing) }))
+    .filter(({ expiry }) => expiry && expiry.status !== 'ok')
+    .sort((a, b) => a.expiry.diffDays - b.expiry.diffDays);
+}
+
+function updateExpiryAlertBadge() {
+  const badge = document.getElementById('expiry-alert-badge');
+  if (!badge) return;
+  const alerts = getExpiryAlerts();
+  if (alerts.length > 0) {
+    badge.textContent = alerts.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
+
+function buildExpiryAlertBanner() {
+  const alerts = getExpiryAlerts();
+  if (alerts.length === 0) return '';
+
+  const items = alerts.map(({ ing, expiry }) => {
+    const icon = expiry.status === 'expired' ? '🚨' : expiry.status === 'today' ? '⚠️' : '🕐';
+    const cls  = expiry.status === 'expired' ? 'expiry-alert-expired'
+               : expiry.status === 'today'   ? 'expiry-alert-today' : 'expiry-alert-soon';
+    const dateStr = new Date(ing.expiryDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+    return `
+      <div class="expiry-alert-item ${cls}">
+        <span class="regular-alert-icon">${icon}</span>
+        <span class="regular-alert-name">${escapeHtml(ing.name)}</span>
+        <span class="regular-alert-detail">${dateStr}（${expiry.label}）</span>
+        <button class="btn btn-sm expiry-consume-btn"
+          onclick="showConsumeModal('${ing.id}')">🍽️ 使う</button>
+        <button class="btn btn-sm expiry-delete-btn"
+          onclick="deleteIngredient('${ing.id}')">🗑️</button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="expiry-alert-banner">
+      <div class="regular-alert-header">
+        📅 賞味期限アラート（${alerts.length}件）
+      </div>
+      ${items}
+    </div>`;
+}
+
+function buildExpiryBadge(ing) {
+  const expiry = getExpiryStatus(ing);
+  if (!expiry) return '';
+  const cls = expiry.status === 'expired' ? 'expiry-badge-expired'
+            : expiry.status === 'today'   ? 'expiry-badge-today'
+            : expiry.status === 'soon'    ? 'expiry-badge-soon'
+            : 'expiry-badge-ok';
+  const dateStr = new Date(ing.expiryDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+  return `<span class="expiry-badge ${cls}" title="賞味期限: ${dateStr}">📅 ${expiry.label}</span>`;
+}
+
 // ==================== REGULAR INGREDIENTS LOGIC ====================
 
 function getRegularAlerts() {
@@ -2044,9 +2148,12 @@ function renderFridgeTab() {
     if (items.length > 0) groups[cat] = items;
   }
 
+  // === 賞味期限アラートバナー ===
+  const expiryBanner = buildExpiryAlertBanner();
+
   // === レギュラー食材アラートバナー ===
   const alerts = getRegularAlerts();
-  let alertBanner = '';
+  let regularBanner = '';
   if (alerts.length > 0) {
     const alertItems = alerts.map(a => {
       const isMissing = a.status === 'missing';
@@ -2063,7 +2170,7 @@ function renderFridgeTab() {
             onclick="addRegularToShopping('${escapeHtml(a.id)}')">🛒 追加</button>
         </div>`;
     }).join('');
-    alertBanner = `
+    regularBanner = `
       <div class="regular-alert-banner">
         <div class="regular-alert-header">
           ⭐ レギュラー食材のアラート (${alerts.length}件)
@@ -2072,8 +2179,10 @@ function renderFridgeTab() {
       </div>`;
   }
 
+  const banners = expiryBanner + regularBanner;
+
   if (ings.length === 0) {
-    container.innerHTML = alertBanner + `
+    container.innerHTML = banners + `
       <div class="empty-state">
         <div class="empty-icon">🧊</div>
         <p>まだ食材が登録されていません</p>
@@ -2082,7 +2191,7 @@ function renderFridgeTab() {
     return;
   }
 
-  container.innerHTML = alertBanner + Object.entries(groups).map(([cat, items]) => `
+  container.innerHTML = banners + Object.entries(groups).map(([cat, items]) => `
     <div class="ingredient-group">
       <h3 class="group-title">${CATEGORY_EMOJIS[cat]} ${cat}</h3>
       <div class="ingredient-grid">
@@ -2091,12 +2200,22 @@ function renderFridgeTab() {
             r => r.name.toLowerCase() === ing.name.toLowerCase()
           );
           const regAlert = isRegular && alerts.some(a => a.name.toLowerCase() === ing.name.toLowerCase());
+          const expiry = getExpiryStatus(ing);
+          const expiryAlertCard = expiry && (expiry.status === 'expired' || expiry.status === 'today' || expiry.status === 'soon');
+          const cardClass = [
+            'ingredient-card',
+            regAlert ? 'regular-alert-card' : '',
+            expiry?.status === 'expired' ? 'expiry-card-expired' : '',
+            expiry?.status === 'today'   ? 'expiry-card-today'   : '',
+            expiry?.status === 'soon'    ? 'expiry-card-soon'    : '',
+          ].filter(Boolean).join(' ');
           return `
-          <div class="ingredient-card${regAlert ? ' regular-alert-card' : ''}" data-id="${ing.id}">
+          <div class="${cardClass}" data-id="${ing.id}">
             <div class="ingredient-card-body">
               ${isRegular ? `<span class="regular-star-badge" title="レギュラー食材">⭐</span>` : ''}
               <span class="ingredient-name">${escapeHtml(ing.name)}</span>
               <span class="ingredient-qty">${ing.quantity}${ing.unit}</span>
+              ${buildExpiryBadge(ing)}
             </div>
             <div class="ingredient-card-actions">
               <button class="btn-icon consume" title="消費" onclick="showConsumeModal('${ing.id}')">🍽️</button>
@@ -2113,6 +2232,7 @@ function renderFridgeTab() {
 
   // バッジ更新
   updateRegularAlertBadge();
+  updateExpiryAlertBadge();
 }
 
 function addRegularToShopping(regId) {
