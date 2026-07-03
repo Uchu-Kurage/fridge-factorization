@@ -1,0 +1,34 @@
+{
+  "name": "冷蔵庫☆因数分解",
+  "short_name": "因数分解",
+  "description": "冷蔵庫の中身から作れるメニューを提案してくれるアプリ。食材・調味料の管理、メニュー提案、買い物リスト機能搭載。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF0F3",
+  "theme_color": "#FF8FAB",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
