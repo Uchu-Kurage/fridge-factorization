@@ -6,6 +6,17 @@
   <meta name="theme-color" content="#FF8FAB" />
   <title>冷蔵庫☆因数分解</title>
   <meta name="description" content="冷蔵庫の中身から作れるメニューを提案してくれるアプリ。食材・調味料の管理、メニュー提案、買い物リスト機能搭載。" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="因数分解" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
@@ -202,5 +213,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <script src="app.js"></script>
+<script>
+  // ===== PWA: Service Worker 登録 =====
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.warn('Service Worker の登録に失敗しました:', err);
+      });
+    });
+  }
+</script>
 </body>
 </html>
