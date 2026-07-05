@@ -424,6 +424,54 @@ a { text-decoration: none; color: inherit; }
   justify-content: flex-end;
 }
 
+/* === 在庫レベル セグメントUI === */
+.stock-seg {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+.stock-seg-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary, #8a8a8a);
+  background: var(--bg-muted, #f2f2f5);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-full, 999px);
+  padding: 5px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition, all 0.15s ease);
+}
+.stock-seg-btn:hover { filter: brightness(0.97); }
+.stock-seg-btn.active.stock-seg-plenty {
+  color: var(--color-success);
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+}
+.stock-seg-btn.active.stock-seg-low {
+  color: #C98A20;
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+}
+.stock-seg-btn.active.stock-seg-none {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+}
+/* 在庫「なし」カードは控えめに */
+.ingredient-card.stock-card-none { opacity: 0.62; }
+.ingredient-card.stock-card-none:hover { opacity: 1; }
+.btn-icon.buy:hover { background: var(--color-secondary-light); }
+
+/* 「作る」確認モーダル */
+.cook-confirm-desc { font-size: 0.85rem; color: var(--text-secondary, #8a8a8a); margin-bottom: 12px; }
+.cook-confirm-list { display: flex; flex-direction: column; gap: 12px; }
+.cook-confirm-row { display: flex; flex-direction: column; gap: 6px; }
+.cook-confirm-name { font-size: 0.9rem; font-weight: 800; color: var(--text-primary); }
+.cook-confirm-current { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary, #8a8a8a); margin-left: 6px; }
+
 /* === RECIPE CARDS === */
 .recipe-grid {
   display: grid;
