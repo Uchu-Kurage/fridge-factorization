@@ -460,6 +460,29 @@ a { text-decoration: none; color: inherit; }
   background: var(--color-danger-light);
   border-color: var(--color-danger);
 }
+/* カード内は幅が狭いので「選択中だけラベル、非選択は色ドットのみ」 */
+.card-stock-seg .stock-seg-btn {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.card-stock-seg .stock-seg-ic { font-size: 0.7rem; line-height: 1; }
+.card-stock-seg .stock-seg-label { display: none; }
+.card-stock-seg .stock-seg-btn.active {
+  flex: 1 1 auto;
+  padding: 4px 8px;
+}
+.card-stock-seg .stock-seg-btn.active .stock-seg-label {
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 在庫「なし」カードは控えめに */
 .ingredient-card.stock-card-none { opacity: 0.62; }
 .ingredient-card.stock-card-none:hover { opacity: 1; }

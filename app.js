@@ -2116,7 +2116,7 @@ function renderFridgeTab() {
             const m = STOCK_META[lv];
             const active = stock === lv ? ' active' : '';
             return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
-              onclick="setStock('${ing.id}','${lv}')">${m.icon} ${m.label}</button>`;
+              title="${m.label}" onclick="setStock('${ing.id}','${lv}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.label}</span></button>`;
           }).join('');
           return `
           <div class="${cardClass}" data-id="${ing.id}">
