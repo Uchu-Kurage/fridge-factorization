@@ -16,6 +16,18 @@ const INGREDIENT_CATEGORIES = ['野菜', '肉・魚', '卵・乳製品', '調味
 const RECIPE_CATEGORIES = ['和食', '洋食', '中華', '丼・麺', '副菜・その他'];
 const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '枚', '袋', '缶', 'パック', '束', '大さじ', '小さじ', '少々', '適量'];
 
+// 冷蔵庫の在庫レベル（数値・単位に代わるざっくり3段階）
+const STOCK_LEVELS = ['plenty', 'low', 'none'];
+const STOCK_META = {
+  plenty: { label: 'たっぷり', icon: '🟢' },
+  low:    { label: '少し',    icon: '🟡' },
+  none:   { label: 'なし',    icon: '⚪' },
+};
+// 1段階下げる（作る／消費のデフォルト）
+const STOCK_LOWER = { plenty: 'low', low: 'none', none: 'none' };
+// 多寡の順位（アラート判定用）
+const STOCK_RANK = { plenty: 2, low: 1, none: 0 };
+
 const CATEGORY_EMOJIS = {
   '野菜': '🥦', '肉・魚': '🥩', '卵・乳製品': '🥚',
   '調味料': '🧂', '乾物・缶詰': '🥫', 'その他': '🍱',
@@ -874,6 +886,25 @@ function loadState() {
     state.customRecipes = [];
     state.regularSettings = [];
   }
+  migrateState();
+}
+
+// 旧形式（数値 quantity + unit / minQuantity）を3段階の在庫モデルへ移行
+function migrateState() {
+  for (const ing of state.ingredients) {
+    if (!ing.stock) {
+      // 旧: quantity>0 → たっぷり、それ以外 → なし（「少し」は推定できないため）
+      ing.stock = (typeof ing.quantity === 'number' ? ing.quantity : 1) > 0 ? 'plenty' : 'none';
+    }
+    if (!STOCK_LEVELS.includes(ing.stock)) ing.stock = 'plenty';
+    delete ing.quantity;
+    delete ing.unit;
+  }
+  for (const reg of state.regularSettings) {
+    if (!reg.alertAt) reg.alertAt = 'low';
+    delete reg.minQuantity;
+    delete reg.unit;
+  }
 }
 
 // === UTILS ===
@@ -883,6 +914,11 @@ function generateId() {
 
 function getAllRecipes() {
   return [...BUILT_IN_RECIPES, ...state.customRecipes];
+}
+
+// 在庫が「なし」でない＝実際に手元にある食材だけを返す
+function availableIngredients() {
+  return state.ingredients.filter(i => i.stock !== 'none');
 }
 
 function escapeHtml(str) {
@@ -907,8 +943,9 @@ function getRecipeMatchInfo(recipe) {
   const matched = [];
   const missing = [];
 
+  const available = availableIngredients();
   for (const ri of required) {
-    const found = matchIngredientName(ri.name, state.ingredients);
+    const found = matchIngredientName(ri.name, available);
     if (found) {
       matched.push({ recipeIng: ri, fridgeIng: found });
     } else {
@@ -934,34 +971,6 @@ function getSortedSuggestedRecipes() {
     .sort((a, b) => b.info.percentage - a.info.percentage);
 }
 
-// === CONSUME RECIPE ===
-function consumeRecipe(recipeId) {
-  const recipe = getAllRecipes().find(r => r.id === recipeId);
-  if (!recipe) return;
-
-  const required = recipe.requiredIngredients.filter(ri => !ri.optional);
-  for (const ri of required) {
-    const fridgeIdx = state.ingredients.findIndex(fi => matchIngredientName(ri.name, [fi]));
-    if (fridgeIdx === -1) continue;
-
-    const fi = state.ingredients[fridgeIdx];
-    // Skip quantity tracking for special units
-    if (['少々', '適量'].includes(ri.unit) || ['少々', '適量'].includes(fi.unit)) continue;
-
-    if (fi.unit === ri.unit) {
-      fi.quantity -= ri.quantity;
-    } else {
-      // Units don't match — subtract 1 from fridge quantity as approximation
-      fi.quantity -= 1;
-    }
-
-    if (fi.quantity <= 0) {
-      state.ingredients.splice(fridgeIdx, 1);
-    }
-  }
-  saveState();
-}
-
 // === SHOPPING LIST ===
 function addToShoppingList(item) {
   state.shoppingList.push({
@@ -983,15 +992,15 @@ function movePurchasedToFridge() {
       fi.name.toLowerCase() === item.name.toLowerCase()
     );
     if (exists) {
-      if (exists.unit === item.unit) exists.quantity += item.quantity;
-      else exists.quantity += item.quantity; // rough merge
+      // 買ってきた＝補充。在庫レベルを「たっぷり」に戻す
+      exists.stock = 'plenty';
     } else {
       state.ingredients.push({
         id: generateId(),
         name: item.name,
         category: item.category,
-        quantity: item.quantity,
-        unit: item.unit,
+        stock: 'plenty',
+        expiryDate: null,
         addedAt: Date.now(),
       });
     }
@@ -1015,6 +1024,32 @@ function closeModal() {
   const overlay = document.getElementById('modal-overlay');
   overlay.classList.remove('active');
   currentModal = null;
+}
+
+// ==================== 在庫レベル セグメントUI ====================
+// [たっぷり][少し][なし] の3択。groupId 要素の data-level に選択値を保持する。
+function buildStockSegment(groupId, currentLevel = 'plenty') {
+  const btns = STOCK_LEVELS.map(lv => {
+    const m = STOCK_META[lv];
+    const active = lv === currentLevel ? ' active' : '';
+    return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
+      data-level="${lv}" onclick="selectStockSeg('${groupId}','${lv}')">${m.icon} ${m.label}</button>`;
+  }).join('');
+  return `<div class="stock-seg" id="${groupId}" data-level="${currentLevel}">${btns}</div>`;
+}
+
+function selectStockSeg(groupId, level) {
+  const seg = document.getElementById(groupId);
+  if (!seg) return;
+  seg.dataset.level = level;
+  seg.querySelectorAll('.stock-seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.level === level);
+  });
+}
+
+function readStockSeg(groupId) {
+  const seg = document.getElementById(groupId);
+  return seg && STOCK_LEVELS.includes(seg.dataset.level) ? seg.dataset.level : 'plenty';
 }
 
 // ==================== MODAL: BULK ADD ====================
@@ -1045,7 +1080,7 @@ function showBulkAddModal() {
               fi.name.toLowerCase() === qi.name.toLowerCase()
             );
             return `<button class="quick-chip ${inFridge ? 'quick-chip-have' : ''}"
-              onclick="quickAddBulkRow(${globalIdx}, this)" title="${qi.quantity}${qi.unit}">
+              onclick="quickAddBulkRow(${globalIdx}, this)" title="${escapeHtml(qi.name)}">
               ${escapeHtml(qi.name)}${inFridge ? ' ✓' : ''}
             </button>`;
           }).join('')}
@@ -1119,8 +1154,7 @@ function quickAddBulkRow(globalIdx, chipEl) {
     if (!nameInput.value.trim()) {
       nameInput.value = qi.name;
       row.querySelector('.bulk-cat').value = qi.category;
-      row.querySelector('.bulk-qty').value = qi.quantity;
-      row.querySelector('.bulk-unit').value = qi.unit;
+      // 在庫は初期値「たっぷり」のまま（チップ選択で数量指定は不要）
       // focus({ preventScroll: true }) でスクロールせずに入力可能状態にする
       nameInput.focus({ preventScroll: true });
       updateBulkCount();
@@ -1138,9 +1172,6 @@ function addBulkRow(prefill, noScroll = false) {
   const container = document.getElementById('bulk-rows-container');
   if (!container) return;
 
-  const unitOptions = UNITS.map(u =>
-    `<option value="${u}" ${prefill && u === prefill.unit ? 'selected' : ''}>${u}</option>`
-  ).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
     `<option value="${c}" ${prefill && c === prefill.category ? 'selected' : ''}>${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
@@ -1161,8 +1192,7 @@ function addBulkRow(prefill, noScroll = false) {
     </div>
     <div class="bulk-row-bottom">
       <select class="form-select bulk-cat">${catOptions}</select>
-      <input type="number" class="form-input bulk-qty" value="${prefill ? prefill.quantity : 1}" min="0" step="0.1" />
-      <select class="form-select bulk-unit">${unitOptions}</select>
+      ${buildStockSegment('bulk-stock-' + id, (prefill && prefill.stock) || 'plenty')}
     </div>
   `;
   container.appendChild(row);
@@ -1198,18 +1228,18 @@ function submitBulkAdd() {
     const name = row.querySelector('.bulk-name').value.trim();
     if (!name) continue;
     const category = row.querySelector('.bulk-cat').value;
-    const quantity = parseFloat(row.querySelector('.bulk-qty').value) || 1;
-    const unit = row.querySelector('.bulk-unit').value;
+    const stock = readStockSeg('bulk-stock-' + row.dataset.rowId);
 
-    // If same name + same unit already exists → merge quantity
+    // 同名が既にあれば在庫レベルを上書き（重複を作らない）
     const existing = state.ingredients.find(fi =>
-      fi.name.toLowerCase() === name.toLowerCase() && fi.unit === unit
+      fi.name.toLowerCase() === name.toLowerCase()
     );
     if (existing) {
-      existing.quantity += quantity;
+      existing.stock = stock;
+      existing.category = category;
       skipped.push(name);
     } else {
-      newItems.push({ id: generateId(), name, category, quantity, unit, addedAt: Date.now() });
+      newItems.push({ id: generateId(), name, category, stock, expiryDate: null, addedAt: Date.now() });
     }
   }
 
@@ -1225,96 +1255,17 @@ function submitBulkAdd() {
   renderSuggestTab();
 
   if (skipped.length > 0 && newItems.length > 0) {
-    showToast(`${newItems.length}品を追加・${skipped.length}品を数量更新しました！`, 'success');
+    showToast(`${newItems.length}品を追加・${skipped.length}品を在庫更新しました！`, 'success');
   } else if (skipped.length > 0) {
-    showToast(`${skipped.length}品の数量を更新しました！`, 'success');
+    showToast(`${skipped.length}品の在庫を更新しました！`, 'success');
   } else {
     showToast(`${newItems.length}品を追加しました！🎉`, 'success');
   }
 }
 
-// ==================== QTY SLIDER COMPONENT ====================
-
-// 単位ごとのスライダー設定
-const QTY_SLIDER_CONFIG = {
-  // 単位 -> { max, step }
-  'g':    { max: 1000, step: 10   },
-  'kg':   { max: 10,   step: 0.1  },
-  'ml':   { max: 1000, step: 10   },
-  'L':    { max: 10,   step: 0.1  },
-  '枚':   { max: 50,   step: 1    },
-  '本':   { max: 20,   step: 1    },
-  '個':   { max: 30,   step: 1    },
-  '袋':   { max: 10,   step: 1    },
-  '缶':   { max: 10,   step: 1    },
-  'パック': { max: 10, step: 1    },
-  '束':   { max: 10,   step: 1    },
-  '大さじ': { max: 10, step: 0.5  },
-  '小さじ': { max: 10, step: 0.5  },
-  '少々':  { max: 5,   step: 1    },
-  '適量':  { max: 5,   step: 1    },
-};
-
-function getSliderConfig(unit) {
-  return QTY_SLIDER_CONFIG[unit] || { max: 100, step: 1 };
-}
-
-// スライダーと数値入力を同期させる HTML を返す
-function buildQtySlider(numId, sliderId, initialVal, unit) {
-  const cfg = getSliderConfig(unit);
-  const val = Math.min(initialVal, cfg.max);
-  return `
-    <div class="qty-slider-wrap">
-      <div class="qty-slider-top">
-        <input type="number" id="${numId}" class="form-input qty-num-input"
-          value="${val}" min="0" step="${cfg.step}"
-          oninput="syncQtyFromNum('${numId}','${sliderId}')" />
-        <span class="qty-slider-unit" id="${sliderId}-unit">${escapeHtml(unit)}</span>
-      </div>
-      <input type="range" id="${sliderId}" class="qty-slider"
-        min="0" max="${cfg.max}" step="${cfg.step}" value="${val}"
-        oninput="syncQtyFromSlider('${numId}','${sliderId}')" />
-      <div class="qty-slider-labels">
-        <span>0</span><span>${cfg.max / 2}</span><span>${cfg.max}</span>
-      </div>
-    </div>`;
-}
-
-function syncQtyFromNum(numId, sliderId) {
-  const num = document.getElementById(numId);
-  const sld = document.getElementById(sliderId);
-  if (!num || !sld) return;
-  const v = parseFloat(num.value) || 0;
-  sld.value = Math.min(v, parseFloat(sld.max));
-}
-
-function syncQtyFromSlider(numId, sliderId) {
-  const num = document.getElementById(numId);
-  const sld = document.getElementById(sliderId);
-  if (!num || !sld) return;
-  num.value = sld.value;
-}
-
-// 単位変更時にスライダー設定を更新
-function updateSliderOnUnitChange(selectEl, numId, sliderId) {
-  const unit = selectEl.value;
-  const cfg = getSliderConfig(unit);
-  const sld = document.getElementById(sliderId);
-  const num = document.getElementById(numId);
-  const unitLabel = document.getElementById(sliderId + '-unit');
-  if (sld) {
-    sld.max  = cfg.max;
-    sld.step = cfg.step;
-    sld.value = Math.min(parseFloat(num?.value || 0), cfg.max);
-  }
-  if (num) num.step = cfg.step;
-  if (unitLabel) unitLabel.textContent = unit;
-}
-
 // ==================== MODAL: ADD INGREDIENT ====================
 
 function showAddIngredientModal(prefillName = '', prefillCategory = 'その他') {
-  const unitOptions = UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
     `<option value="${c}" ${c === prefillCategory ? 'selected' : ''}>${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
@@ -1330,7 +1281,7 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
         <div class="ing-name-wrap">
           <input type="text" id="ing-name" class="form-input" placeholder="例: 卵"
             value="${escapeHtml(prefillName)}"
-            oninput="autoFillIngUnit(this)" />
+            oninput="autoFillIngCategory(this)" />
           <span id="ing-autofill-hint" class="autofill-hint"></span>
         </div>
       </div>
@@ -1339,12 +1290,8 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
         <select id="ing-category" class="form-select">${catOptions}</select>
       </div>
       <div class="form-group">
-        <label>単位 <span class="required">*</span></label>
-        <select id="ing-unit" class="form-select" onchange="updateSliderOnUnitChange(this,'ing-qty','ing-qty-slider')">${unitOptions}</select>
-      </div>
-      <div class="form-group">
-        <label>数量 <span class="required">*</span></label>
-        ${buildQtySlider('ing-qty', 'ing-qty-slider', 1, '個')}
+        <label>在庫 <span class="required">*</span></label>
+        ${buildStockSegment('ing-stock', 'plenty')}
       </div>
       <div class="form-group">
         <label>賞味期限 <span class="optional-label">（任意）</span></label>
@@ -1362,32 +1309,39 @@ function showAddIngredientModal(prefillName = '', prefillCategory = 'その他')
   `);
   const nameEl = document.getElementById('ing-name');
   nameEl.focus();
-  // prefillがある場合は初期値も自動入力
-  if (prefillName) autoFillIngUnit(nameEl);
+  // prefillがある場合はカテゴリも自動入力
+  if (prefillName) autoFillIngCategory(nameEl);
 }
 
 function submitAddIngredient() {
   const name = document.getElementById('ing-name').value.trim();
   const category = document.getElementById('ing-category').value;
-  const quantity = parseFloat(document.getElementById('ing-qty').value);
-  const unit = document.getElementById('ing-unit').value;
+  const stock = readStockSeg('ing-stock');
 
   if (!name) { showToast('食材名を入力してください', 'error'); return; }
-  if (isNaN(quantity) || quantity < 0) { showToast('数量を正しく入力してください', 'error'); return; }
 
-  state.ingredients.push({
-    id: generateId(), name, category, quantity, unit,
-    expiryDate: document.getElementById('ing-expiry')?.value || null,
-    addedAt: Date.now(),
-  });
+  // 同名が既にあれば在庫レベルを上書き（重複を作らない）
+  const existing = state.ingredients.find(i => i.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    existing.stock = stock;
+    existing.category = category;
+    const exp = document.getElementById('ing-expiry')?.value;
+    if (exp) existing.expiryDate = exp;
+  } else {
+    state.ingredients.push({
+      id: generateId(), name, category, stock,
+      expiryDate: document.getElementById('ing-expiry')?.value || null,
+      addedAt: Date.now(),
+    });
+  }
   saveState();
   closeModal();
   renderFridgeTab();
   showToast(`${name} を追加しました！`, 'success');
 }
 
-// 食材名から単位・数量・カテゴリを自動推定して入力
-function autoFillIngUnit(nameEl) {
+// 食材名からカテゴリを自動推定して入力（単位・数量は3段階在庫化で不要になった）
+function autoFillIngCategory(nameEl) {
   const name = nameEl.value.trim();
   const hint = document.getElementById('ing-autofill-hint');
 
@@ -1398,62 +1352,24 @@ function autoFillIngUnit(nameEl) {
 
   const lower = name.toLowerCase();
 
-  // 優先度１: QUICK_INGREDIENTS 完全一致
+  // QUICK_INGREDIENTS 完全一致 → 部分一致 の順でカテゴリを推定
   let match = QUICK_INGREDIENTS.find(q => q.name.toLowerCase() === lower);
-  let matchSource = 'よく使う食材';
-
-  // 優先度２: レシピ食材完全一致
-  if (!match) {
-    for (const recipe of getAllRecipes()) {
-      for (const ri of recipe.requiredIngredients) {
-        if (ri.name.toLowerCase() === lower) {
-          match = { name: ri.name, unit: ri.unit, quantity: ri.quantity, category: 'その他' };
-          matchSource = `レシピ「${recipe.name}」`;
-          break;
-        }
-      }
-      if (match) break;
-    }
-  }
-
-  // 優先度３: QUICK_INGREDIENTS 部分一致
   if (!match) {
     match = QUICK_INGREDIENTS.find(q =>
       q.name.toLowerCase().includes(lower) || lower.includes(q.name.toLowerCase())
     );
-    if (match) matchSource = 'よく使う食材(部分一致)';
   }
 
-  if (!match) {
+  if (!match || !match.category || match.category === 'その他') {
     if (hint) hint.textContent = '';
     return;
   }
 
-  // 単位セレクトを更新
-  const unitSel = document.getElementById('ing-unit');
-  if (unitSel) {
-    unitSel.value = match.unit;
-    // スライダーも更新
-    updateSliderOnUnitChange(unitSel, 'ing-qty', 'ing-qty-slider');
-  }
+  const catSel = document.getElementById('ing-category');
+  if (catSel) catSel.value = match.category;
 
-  // 数量を更新
-  const qtyNum = document.getElementById('ing-qty');
-  const qtySld = document.getElementById('ing-qty-slider');
-  if (qtyNum && match.quantity) {
-    qtyNum.value = match.quantity;
-    if (qtySld) qtySld.value = Math.min(match.quantity, parseFloat(qtySld.max));
-  }
-
-  // カテゴリを更新（QUICK_INGREDIENTSにカテゴリがある場合）
-  if (match.category && match.category !== 'その他') {
-    const catSel = document.getElementById('ing-category');
-    if (catSel) catSel.value = match.category;
-  }
-
-  // ヒントを表示
   if (hint) {
-    hint.textContent = `✨ ${matchSource}の単位を自動設定しました`;
+    hint.textContent = `✨ カテゴリを「${match.category}」に自動設定しました`;
     hint.className = 'autofill-hint autofill-hint-active';
     clearTimeout(hint._timer);
     hint._timer = setTimeout(() => {
@@ -1462,100 +1378,35 @@ function autoFillIngUnit(nameEl) {
   }
 }
 
-// ==================== MODAL: CONSUME INGREDIENT ====================
-function showConsumeModal(id) {
+// ==================== 在庫レベルの直接変更（カードのセグメント） ====================
+function setStock(id, level) {
+  const ing = state.ingredients.find(i => i.id === id);
+  if (!ing || !STOCK_LEVELS.includes(level)) return;
+  if (ing.stock === level) return;
+  ing.stock = level;
+  saveState();
+  renderFridgeTab();
+  renderSuggestTab();
+  showToast(`${ing.name} の在庫を「${STOCK_META[level].label}」にしました`, 'success');
+}
+
+// 冷蔵庫の食材を買い物リストへ（在庫「なし」カードのクイックボタン）
+function addFridgeItemToShopping(id) {
   const ing = state.ingredients.find(i => i.id === id);
   if (!ing) return;
-
-  openModal(`
-    <div class="modal-header">
-      <h2>🍽️ 食材を使う</h2>
-      <button class="modal-close-btn" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="consume-ing-name">${escapeHtml(ing.name)}</div>
-      <div class="consume-current">現在の在庫：<strong>${ing.quantity}${ing.unit}</strong></div>
-      <div class="form-group">
-        <label class="form-label">使う量</label>
-        <div class="consume-stepper">
-          <button class="btn btn-ghost consume-step-btn" onclick="changeConsumeAmt(-1)">－</button>
-          <input id="consume-amount" class="form-input consume-input" type="number"
-            min="0.1" step="0.1" value="1"
-            oninput="updateConsumePreview('${id}')">
-          <button class="btn btn-ghost consume-step-btn" onclick="changeConsumeAmt(1)">＋</button>
-          <span class="consume-unit">${escapeHtml(ing.unit)}</span>
-        </div>
-      </div>
-      <div id="consume-preview" class="consume-preview"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="consumeIngredient('${id}')">使う ✅</button>
-    </div>
-  `);
-
-  updateConsumePreview(id);
-}
-
-function changeConsumeAmt(delta) {
-  const input = document.getElementById('consume-amount');
-  if (!input) return;
-  const val = parseFloat(input.value) || 0;
-  input.value = Math.max(0.1, Math.round((val + delta) * 10) / 10);
-  // Trigger preview update — find ingredient id from consume-preview data
-  const preview = document.getElementById('consume-preview');
-  if (preview && preview.dataset.ingId) {
-    updateConsumePreview(preview.dataset.ingId);
-  }
-}
-
-function updateConsumePreview(id) {
-  const ing = state.ingredients.find(i => i.id === id);
-  const preview = document.getElementById('consume-preview');
-  const input = document.getElementById('consume-amount');
-  if (!ing || !preview || !input) return;
-
-  preview.dataset.ingId = id;
-  const amt = parseFloat(input.value) || 0;
-  const remaining = Math.round((ing.quantity - amt) * 100) / 100;
-
-  if (amt <= 0) {
-    preview.innerHTML = `<span class="consume-preview-warn">⚠️ 使う量を入力してください</span>`;
-  } else if (remaining > 0) {
-    preview.innerHTML = `<span class="consume-preview-ok">✅ 使用後の残量：<strong>${remaining}${ing.unit}</strong></span>`;
-  } else if (remaining === 0) {
-    preview.innerHTML = `<span class="consume-preview-zero">📭 使い切ります（冷蔵庫から削除されます）</span>`;
-  } else {
-    preview.innerHTML = `<span class="consume-preview-warn">⚠️ 在庫（${ing.quantity}${ing.unit}）を超えています</span>`;
-  }
-}
-
-function consumeIngredient(id) {
-  const ing = state.ingredients.find(i => i.id === id);
-  const input = document.getElementById('consume-amount');
-  if (!ing || !input) return;
-
-  const amt = parseFloat(input.value) || 0;
-  if (amt <= 0) { showToast('使う量を入力してください', 'error'); return; }
-  if (amt > ing.quantity) { showToast(`在庫（${ing.quantity}${ing.unit}）を超えています`, 'error'); return; }
-
-  const remaining = Math.round((ing.quantity - amt) * 100) / 100;
-  if (remaining <= 0) {
-    // 使い切り → 削除
-    state.ingredients = state.ingredients.filter(i => i.id !== id);
-    saveState();
-    closeModal();
-    renderFridgeTab();
-    renderSuggestTab();
-    showToast(`${ing.name} を使い切りました！`, 'success');
-  } else {
-    ing.quantity = remaining;
-    saveState();
-    closeModal();
-    renderFridgeTab();
-    renderSuggestTab();
-    showToast(`${ing.name} を ${amt}${ing.unit} 使いました（残り ${remaining}${ing.unit}）`, 'success');
-  }
+  const already = state.shoppingList.some(s =>
+    s.name.toLowerCase() === ing.name.toLowerCase() && !s.checked
+  );
+  if (already) { showToast(`${ing.name} は既に買い物リストにあります`, 'info'); return; }
+  const preset = QUICK_INGREDIENTS.find(q => q.name === ing.name);
+  addToShoppingList({
+    name: ing.name,
+    category: ing.category || (preset ? preset.category : 'その他'),
+    quantity: preset ? preset.quantity : 1,
+    unit: preset ? preset.unit : '個',
+  });
+  renderFridgeTab();
+  showToast(`${ing.name} を買い物リストに追加しました 🛒`, 'success');
 }
 
 // ==================== MODAL: EDIT INGREDIENT ====================
@@ -1563,7 +1414,6 @@ function showEditIngredientModal(id) {
   const ing = state.ingredients.find(i => i.id === id);
   if (!ing) return;
 
-  const unitOptions = UNITS.map(u => `<option value="${u}" ${u === ing.unit ? 'selected' : ''}>${u}</option>`).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
     `<option value="${c}" ${c === ing.category ? 'selected' : ''}>${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
@@ -1583,12 +1433,8 @@ function showEditIngredientModal(id) {
         <select id="edit-ing-category" class="form-select">${catOptions}</select>
       </div>
       <div class="form-group">
-        <label>単位</label>
-        <select id="edit-ing-unit" class="form-select" onchange="updateSliderOnUnitChange(this,'edit-ing-qty','edit-ing-qty-slider')">${unitOptions}</select>
-      </div>
-      <div class="form-group">
-        <label>数量</label>
-        ${buildQtySlider('edit-ing-qty', 'edit-ing-qty-slider', ing.quantity, ing.unit)}
+        <label>在庫</label>
+        ${buildStockSegment('edit-ing-stock', ing.stock || 'plenty')}
       </div>
       <div class="form-group">
         <label>賞味期限 <span class="optional-label">（任意）</span></label>
@@ -1611,16 +1457,18 @@ function submitEditIngredient(id) {
   const ing = state.ingredients.find(i => i.id === id);
   if (!ing) return;
 
-  ing.name     = document.getElementById('edit-ing-name').value.trim();
+  const name = document.getElementById('edit-ing-name').value.trim();
+  if (!name) { showToast('食材名を入力してください', 'error'); return; }
+
+  ing.name     = name;
   ing.category = document.getElementById('edit-ing-category').value;
-  ing.quantity = parseFloat(document.getElementById('edit-ing-qty').value);
-  ing.unit     = document.getElementById('edit-ing-unit').value;
+  ing.stock    = readStockSeg('edit-ing-stock');
   ing.expiryDate = document.getElementById('edit-ing-expiry')?.value || null;
 
-  if (!ing.name) { showToast('食材名を入力してください', 'error'); return; }
   saveState();
   closeModal();
   renderFridgeTab();
+  renderSuggestTab();
   showToast('更新しました！', 'success');
 }
 
@@ -1644,8 +1492,9 @@ function showRecipeDetailModal(recipeId) {
     ? '<span class="badge badge-success">✨ 今すぐ作れる！</span>'
     : `<span class="badge badge-warn">🛒 あと ${info.missing.length} 品不足</span>`;
 
+  const available = availableIngredients();
   const ingList = recipe.requiredIngredients.map(ri => {
-    const found = matchIngredientName(ri.name, state.ingredients);
+    const found = matchIngredientName(ri.name, available);
     const cls = found ? 'ing-have' : (ri.optional ? 'ing-optional' : 'ing-missing');
     const icon = found ? '✅' : (ri.optional ? '⭕' : '❌');
     return `<li class="${cls}">${icon} ${escapeHtml(ri.name)} <span class="ing-amount">${ri.quantity}${ri.unit}</span>${ri.optional ? ' <span class="optional-tag">任意</span>' : ''}</li>`;
@@ -1691,15 +1540,68 @@ function showRecipeDetailModal(recipeId) {
   `);
 }
 
+// 「作る」→ 減らす前に確認モーダルを出し、各食材の在庫レベルをユーザーが調整
 function cookRecipe(recipeId) {
   const recipe = getAllRecipes().find(r => r.id === recipeId);
   if (!recipe) return;
-  if (!confirm(`「${recipe.name}」を作りますか？\n使用した食材を冷蔵庫から消費します。`)) return;
-  consumeRecipe(recipeId);
+
+  // レシピの必須食材のうち、冷蔵庫に在庫がある（なし以外）ものを対象にする
+  const available = availableIngredients();
+  const targets = [];
+  for (const ri of recipe.requiredIngredients) {
+    if (ri.optional) continue;
+    const fi = matchIngredientName(ri.name, available);
+    if (fi && !targets.some(t => t.id === fi.id)) targets.push(fi);
+  }
+
+  if (targets.length === 0) {
+    // 減らせる在庫が無い場合はそのまま完了
+    closeModal();
+    showToast(`${recipe.name} を作りました！🍽️`, 'success');
+    return;
+  }
+
+  const rows = targets.map(fi => {
+    const suggested = STOCK_LOWER[fi.stock] || 'none';
+    return `
+      <div class="cook-confirm-row">
+        <div class="cook-confirm-name">${escapeHtml(fi.name)}
+          <span class="cook-confirm-current">今: ${STOCK_META[fi.stock]?.label || ''}</span>
+        </div>
+        ${buildStockSegment('cook-stock-' + fi.id, suggested)}
+      </div>`;
+  }).join('');
+
+  const idsAttr = escapeHtml(targets.map(t => t.id).join(','));
+  openModal(`
+    <div class="modal-header">
+      <h2>🍳 「${escapeHtml(recipe.name)}」を作る</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="cook-confirm-desc">使った後の在庫を選んでください（1段階下げた状態を初期表示しています）。</p>
+      <div class="cook-confirm-list">${rows}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-success" onclick="applyCookResult('${recipeId}','${idsAttr}')">作った！🍽️</button>
+    </div>
+  `);
+}
+
+function applyCookResult(recipeId, idsCsv) {
+  const recipe = getAllRecipes().find(r => r.id === recipeId);
+  const ids = (idsCsv || '').split(',').filter(Boolean);
+  for (const id of ids) {
+    const fi = state.ingredients.find(i => i.id === id);
+    if (!fi) continue;
+    fi.stock = readStockSeg('cook-stock-' + id);
+  }
+  saveState();
   closeModal();
   renderFridgeTab();
   renderSuggestTab();
-  showToast(`${recipe.name} を作りました！🍽️`, 'success');
+  showToast(`${recipe ? recipe.name : '料理'} を作りました！🍽️`, 'success');
 }
 
 function addMissingToShopping(recipeId) {
@@ -1949,7 +1851,7 @@ function buildExpiryAlertBanner() {
         <span class="regular-alert-name">${escapeHtml(ing.name)}</span>
         <span class="regular-alert-detail">${dateStr}（${expiry.label}）</span>
         <button class="btn btn-sm expiry-consume-btn"
-          onclick="showConsumeModal('${ing.id}')">🍽️ 使う</button>
+          onclick="setStock('${ing.id}','none')">🍽️ 使い切り</button>
         <button class="btn btn-sm expiry-delete-btn"
           onclick="deleteIngredient('${ing.id}')">🗑️</button>
       </div>`;
@@ -1978,19 +1880,23 @@ function buildExpiryBadge(ing) {
 // ==================== REGULAR INGREDIENTS LOGIC ====================
 
 function getRegularAlerts() {
-  // 各レギュラー設定について現在の在庫状況を確認
+  // 各レギュラー設定について現在の在庫レベルを確認（未登録は「なし」扱い）
   return state.regularSettings.map(reg => {
     const found = state.ingredients.find(
       i => i.name.toLowerCase() === reg.name.toLowerCase()
     );
-    if (!found) {
-      return { ...reg, status: 'missing', currentQty: 0 };
-    }
-    if (found.quantity < reg.minQuantity) {
-      return { ...reg, status: 'low', currentQty: found.quantity };
-    }
-    return { ...reg, status: 'ok', currentQty: found.quantity };
-  }).filter(r => r.status !== 'ok');
+    const currentStock = found ? (found.stock || 'plenty') : 'none';
+    const alertAt = reg.alertAt || 'low';
+    // 在庫の順位が通知しきい値以下なら警告
+    const alerting = STOCK_RANK[currentStock] <= STOCK_RANK[alertAt];
+    return {
+      ...reg,
+      alertAt,
+      status: !found ? 'missing' : currentStock, // 'missing' | 'low' | 'none'
+      currentStock,
+      alerting,
+    };
+  }).filter(r => r.alerting);
 }
 
 function updateRegularAlertBadge() {
@@ -2012,24 +1918,26 @@ function showRegularManagerModal() {
     ? `<p class="regular-empty-hint">レギュラー食材が未設定です。<br>食材カードの ⭐ から追加できます。</p>`
     : settings.map(reg => {
         const found = state.ingredients.find(i => i.name.toLowerCase() === reg.name.toLowerCase());
-        const currentQty = found ? found.quantity : null;
+        const currentStock = found ? (found.stock || 'plenty') : null;
+        const alertAt = reg.alertAt || 'low';
+        const alerting = currentStock !== null && STOCK_RANK[currentStock] <= STOCK_RANK[alertAt];
         let statusBadge = '';
-        if (currentQty === null) {
+        if (currentStock === null) {
           statusBadge = `<span class="reg-status reg-status-missing">未登録</span>`;
-        } else if (currentQty < reg.minQuantity) {
-          statusBadge = `<span class="reg-status reg-status-low">残り少ない (${currentQty}${reg.unit})</span>`;
+        } else if (alerting) {
+          statusBadge = `<span class="reg-status reg-status-low">${STOCK_META[currentStock].icon} ${STOCK_META[currentStock].label}</span>`;
         } else {
-          statusBadge = `<span class="reg-status reg-status-ok">✓ 充足 (${currentQty}${reg.unit})</span>`;
+          statusBadge = `<span class="reg-status reg-status-ok">✓ ${STOCK_META[currentStock].label}</span>`;
         }
         return `
           <div class="regular-row">
             <div class="regular-row-info">
               <span class="regular-row-name">⭐ ${escapeHtml(reg.name)}</span>
-              <span class="regular-row-min">最低 ${reg.minQuantity}${reg.unit}</span>
+              <span class="regular-row-min">${STOCK_META[alertAt].label}で通知</span>
               ${statusBadge}
             </div>
             <div class="regular-row-actions">
-              <button class="btn btn-ghost btn-sm" onclick="showSetRegularModal('${reg.name}')">変更</button>
+              <button class="btn btn-ghost btn-sm" onclick="showSetRegularModal('${escapeHtml(reg.name)}')">変更</button>
               <button class="btn-icon danger" onclick="removeRegularSetting('${reg.id}')">🗑️</button>
             </div>
           </div>`;
@@ -2059,8 +1967,16 @@ function showSetRegularModal(name, ingId) {
     r => r.name.toLowerCase() === (name || ing?.name || '').toLowerCase()
   );
   const defaultName = name || ing?.name || '';
-  const defaultUnit = existing?.unit || ing?.unit || '個';
-  const defaultMin = existing?.minQuantity || (ing ? Math.max(1, Math.floor(ing.quantity / 2)) : 1);
+  const defaultAlertAt = existing?.alertAt || 'low';
+
+  const choices = [
+    { level: 'low',  label: '少しで通知', hint: '「少し」か「なし」で通知' },
+    { level: 'none', label: 'なしで通知', hint: '「なし」になったら通知' },
+  ].map(c => `
+    <button type="button" class="stock-seg-btn reg-alert-btn${c.level === defaultAlertAt ? ' active' : ''}"
+      data-level="${c.level}" onclick="selectStockSeg('reg-alert-at','${c.level}')">
+      ${STOCK_META[c.level].icon} ${c.label}
+    </button>`).join('');
 
   openModal(`
     <div class="modal-header">
@@ -2069,48 +1985,33 @@ function showSetRegularModal(name, ingId) {
     </div>
     <div class="modal-body">
       <div class="consume-ing-name">${escapeHtml(defaultName)}</div>
-      <p class="regular-modal-desc">この食材の在庫がここで設定した量を下回るとアラートが表示されます。</p>
+      <p class="regular-modal-desc">在庫がこのレベルまで減ったらアラートを表示します。</p>
       <div class="form-group">
-        <label class="form-label">アラートを出す最低量</label>
-        <div class="consume-stepper">
-          <button class="btn btn-ghost consume-step-btn" onclick="
-            var el=document.getElementById('reg-min-qty');
-            el.value=Math.max(0.1, Math.round((parseFloat(el.value)||0-1)*10)/10);
-          ">－</button>
-          <input id="reg-min-qty" class="form-input consume-input" type="number"
-            min="0.1" step="0.1" value="${defaultMin}">
-          <button class="btn btn-ghost consume-step-btn" onclick="
-            var el=document.getElementById('reg-min-qty');
-            el.value=Math.round((parseFloat(el.value)||0+1)*10)/10;
-          ">＋</button>
-          <span class="consume-unit">${escapeHtml(defaultUnit)}</span>
-        </div>
+        <label class="form-label">通知のタイミング</label>
+        <div class="stock-seg" id="reg-alert-at" data-level="${defaultAlertAt}">${choices}</div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveRegularSetting('${escapeHtml(defaultName)}', '${escapeHtml(defaultUnit)}')">⭐ 設定を保存</button>
+      <button class="btn btn-primary" onclick="saveRegularSetting('${escapeHtml(defaultName)}')">⭐ 設定を保存</button>
     </div>
   `);
 }
 
-function saveRegularSetting(name, unit) {
-  const minInput = document.getElementById('reg-min-qty');
-  const minQty = parseFloat(minInput?.value) || 1;
-  if (minQty <= 0) { showToast('最低量を入力してください', 'error'); return; }
+function saveRegularSetting(name) {
+  const seg = document.getElementById('reg-alert-at');
+  const alertAt = seg && ['low', 'none'].includes(seg.dataset.level) ? seg.dataset.level : 'low';
 
   const existing = state.regularSettings.find(
     r => r.name.toLowerCase() === name.toLowerCase()
   );
   if (existing) {
-    existing.minQuantity = minQty;
-    existing.unit = unit;
+    existing.alertAt = alertAt;
   } else {
     state.regularSettings.push({
       id: generateId(),
       name,
-      minQuantity: minQty,
-      unit,
+      alertAt,
     });
   }
   saveState();
@@ -2164,7 +2065,7 @@ function renderFridgeTab() {
           <span class="regular-alert-detail">
             ${isMissing
               ? '冷蔵庫にありません'
-              : `残り ${a.currentQty}${a.unit}（最低 ${a.minQuantity}${a.unit}）`}
+              : `在庫: ${STOCK_META[a.currentStock].label}`}
           </span>
           <button class="btn btn-sm regular-alert-shop-btn"
             onclick="addRegularToShopping('${escapeHtml(a.id)}')">🛒 追加</button>
@@ -2202,23 +2103,33 @@ function renderFridgeTab() {
           const regAlert = isRegular && alerts.some(a => a.name.toLowerCase() === ing.name.toLowerCase());
           const expiry = getExpiryStatus(ing);
           const expiryAlertCard = expiry && (expiry.status === 'expired' || expiry.status === 'today' || expiry.status === 'soon');
+          const stock = ing.stock || 'plenty';
           const cardClass = [
             'ingredient-card',
+            stock === 'none' ? 'stock-card-none' : '',
             regAlert ? 'regular-alert-card' : '',
             expiry?.status === 'expired' ? 'expiry-card-expired' : '',
             expiry?.status === 'today'   ? 'expiry-card-today'   : '',
             expiry?.status === 'soon'    ? 'expiry-card-soon'    : '',
           ].filter(Boolean).join(' ');
+          const stockSeg = STOCK_LEVELS.map(lv => {
+            const m = STOCK_META[lv];
+            const active = stock === lv ? ' active' : '';
+            return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
+              onclick="setStock('${ing.id}','${lv}')">${m.icon} ${m.label}</button>`;
+          }).join('');
           return `
           <div class="${cardClass}" data-id="${ing.id}">
             <div class="ingredient-card-body">
               ${isRegular ? `<span class="regular-star-badge" title="レギュラー食材">⭐</span>` : ''}
               <span class="ingredient-name">${escapeHtml(ing.name)}</span>
-              <span class="ingredient-qty">${ing.quantity}${ing.unit}</span>
               ${buildExpiryBadge(ing)}
+              <div class="stock-seg card-stock-seg">${stockSeg}</div>
             </div>
             <div class="ingredient-card-actions">
-              <button class="btn-icon consume" title="消費" onclick="showConsumeModal('${ing.id}')">🍽️</button>
+              ${stock === 'none'
+                ? `<button class="btn-icon buy" title="買い物リストへ" onclick="addFridgeItemToShopping('${ing.id}')">🛒</button>`
+                : ''}
               <button class="btn-icon ${isRegular ? 'regular-active' : ''}" title="${isRegular ? 'レギュラー設定を変更' : 'レギュラー食材に設定'}"
                 onclick="showSetRegularModal('${escapeHtml(ing.name)}', '${ing.id}')">⭐</button>
               <button class="btn-icon" title="編集" onclick="showEditIngredientModal('${ing.id}')">✏️</button>
@@ -2246,8 +2157,8 @@ function addRegularToShopping(regId) {
     id: generateId(),
     name: reg.name,
     category: preset ? preset.category : 'その他',
-    quantity: reg.minQuantity,
-    unit: reg.unit,
+    quantity: preset ? preset.quantity : 1,
+    unit: preset ? preset.unit : '個',
     checked: false,
     addedAt: Date.now(),
   });
