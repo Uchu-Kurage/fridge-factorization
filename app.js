@@ -34,6 +34,51 @@ const CATEGORY_EMOJIS = {
   '和食': '🍱', '洋食': '🍝', '中華': '🥢', '丼・麺': '🍜', '副菜・その他': '🥗',
 };
 
+// 食材ごとの絵文字（冷蔵庫イラストで棚に並べるアイコン）。
+// 完全一致 → 部分一致 → カテゴリ絵文字 の順にフォールバックする。
+const FOOD_EMOJIS = {
+  // 野菜
+  '玉ねぎ': '🧅', 'にんじん': '🥕', 'じゃがいも': '🥔', 'キャベツ': '🥬',
+  'トマト': '🍅', 'きゅうり': '🥒', 'もやし': '🌱', 'ほうれん草': '🥬',
+  '小松菜': '🥬', '空芯菜': '🥬', 'とうもろこし': '🌽', 'アスパラガス': '🌿',
+  'ブロッコリー': '🥦', 'ニンニクの芽': '🧄', 'ネギ': '🌿', 'にんにく': '🧄',
+  'しょうが': '🫚', 'ごぼう': '🥕', '大根': '🥬', 'ピーマン': '🫑',
+  'しいたけ': '🍄', 'しめじ': '🍄', 'エリンギ': '🍄', 'えのき': '🍄',
+  'なす': '🍆', 'かぼちゃ': '🎃', 'レタス': '🥬', 'ごま': '🌰',
+  // 肉・魚
+  '豚肉': '🥓', '鶏肉': '🍗', '牛肉': '🥩', '豚ひき肉': '🥩', '鶏ひき肉': '🍗',
+  'ベーコン': '🥓', '鮭': '🐟', 'まぐろ': '🐟', 'えび': '🍤', 'いか': '🦑',
+  'ソーセージ': '🌭', 'ウインナー': '🌭', 'ハム': '🍖',
+  // 卵・乳製品
+  '卵': '🥚', '牛乳': '🥛', 'バター': '🧈', '生クリーム': '🥛',
+  '豆腐': '⬜', 'チーズ': '🧀', 'ヨーグルト': '🥛',
+  // 調味料
+  '醤油': '🫗', 'みりん': '🫗', '料理酒': '🍶', '砂糖': '🥄', '塩': '🧂',
+  'こしょう': '🧂', 'ごま油': '🫗', 'オリーブオイル': '🫒', '味噌': '🍯',
+  'ケチャップ': '🍅', 'マヨネーズ': '🥚', '豆板醤': '🌶️', 'めんつゆ': '🫗',
+  'コンソメ': '🧊', '甜麺醤': '🫙', 'オイスターソース': '🦪', 'ソース': '🫗',
+  '酢': '🫗', 'カレー粉': '🍛', 'だし': '🫙',
+  // 乾物・缶詰
+  'パスタ': '🍝', 'そば': '🍜', '春雨': '🍜', 'ツナ缶': '🥫', 'ひじき': '🌿',
+  '薄力粉': '🌾', 'うどん': '🍜', '小麦粉': '🌾', 'のり': '🍙', '乾燥わかめ': '🌿',
+  'トマト缶': '🥫', 'コーン缶': '🌽', '大豆': '🫘',
+  // その他
+  'ご飯': '🍚', '米': '🍚', '油揚げ': '🟨', '餃子の皮': '🥟', '塩昆布': '🌿',
+  '納豆': '🫘', 'パン': '🍞', 'こんにゃく': '🟫', 'キムチ': '🌶️',
+};
+
+// 食材名から絵文字を引く（完全一致 → 部分一致 → カテゴリ絵文字）。
+function getFoodEmoji(ing) {
+  const name = (ing && ing.name) ? ing.name : '';
+  if (FOOD_EMOJIS[name]) return FOOD_EMOJIS[name];
+  if (name) {
+    for (const key in FOOD_EMOJIS) {
+      if (name.includes(key) || key.includes(name)) return FOOD_EMOJIS[key];
+    }
+  }
+  return CATEGORY_EMOJIS[ing && ing.category] || '🍽️';
+}
+
 // === BUILT-IN RECIPES ===
 const BUILT_IN_RECIPES = [
   // --- 和食 ---
@@ -2092,58 +2137,111 @@ function renderFridgeTab() {
     return;
   }
 
-  container.innerHTML = banners + Object.entries(groups).map(([cat, items]) => `
-    <div class="ingredient-group">
-      <h3 class="group-title">${CATEGORY_EMOJIS[cat]} ${cat}</h3>
-      <div class="ingredient-grid">
-        ${items.map(ing => {
-          const isRegular = state.regularSettings.some(
-            r => r.name.toLowerCase() === ing.name.toLowerCase()
-          );
-          const regAlert = isRegular && alerts.some(a => a.name.toLowerCase() === ing.name.toLowerCase());
-          const expiry = getExpiryStatus(ing);
-          const expiryAlertCard = expiry && (expiry.status === 'expired' || expiry.status === 'today' || expiry.status === 'soon');
-          const stock = ing.stock || 'plenty';
-          const cardClass = [
-            'ingredient-card',
-            stock === 'none' ? 'stock-card-none' : '',
-            regAlert ? 'regular-alert-card' : '',
-            expiry?.status === 'expired' ? 'expiry-card-expired' : '',
-            expiry?.status === 'today'   ? 'expiry-card-today'   : '',
-            expiry?.status === 'soon'    ? 'expiry-card-soon'    : '',
-          ].filter(Boolean).join(' ');
-          const stockSeg = STOCK_LEVELS.map(lv => {
-            const m = STOCK_META[lv];
-            const active = stock === lv ? ' active' : '';
-            return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
-              title="${m.label}" onclick="setStock('${ing.id}','${lv}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.label}</span></button>`;
-          }).join('');
-          return `
-          <div class="${cardClass}" data-id="${ing.id}">
-            <div class="ingredient-card-body">
-              ${isRegular ? `<span class="regular-star-badge" title="レギュラー食材">⭐</span>` : ''}
-              <span class="ingredient-name">${escapeHtml(ing.name)}</span>
+  // === 冷蔵庫イラスト（棚に食材を並べる） ===
+  const shelves = INGREDIENT_CATEGORIES
+    .filter(cat => groups[cat])
+    .map(cat => {
+      const items = groups[cat];
+      const lowCount  = items.filter(i => (i.stock || 'plenty') === 'low').length;
+      const noneCount = items.filter(i => (i.stock || 'plenty') === 'none').length;
+      const shelfMod =
+        cat === '野菜'   ? ' shelf--drawer' :
+        cat === '調味料' ? ' shelf--door'   : '';
+
+      const shelfBadges = [
+        lowCount  ? `<span class="shelf-badge shelf-badge-low">🟡 少 ${lowCount}</span>` : '',
+        noneCount ? `<span class="shelf-badge shelf-badge-none">⚪ 切れ ${noneCount}</span>` : '',
+      ].filter(Boolean).join('');
+
+      const tiles = items.map(ing => {
+        const isRegular = state.regularSettings.some(
+          r => r.name.toLowerCase() === ing.name.toLowerCase()
+        );
+        const regAlert = isRegular && alerts.some(a => a.name.toLowerCase() === ing.name.toLowerCase());
+        const expiry = getExpiryStatus(ing);
+        const stock = STOCK_LEVELS.includes(ing.stock) ? ing.stock : 'plenty';
+        const tileClass = [
+          'food-tile',
+          `stock-${stock}`,
+          regAlert ? 'tile-alert' : '',
+          expiry?.status === 'expired' ? 'tile-expired' : '',
+          expiry?.status === 'today'   ? 'tile-today'   : '',
+          expiry?.status === 'soon'    ? 'tile-soon'    : '',
+        ].filter(Boolean).join(' ');
+
+        const stockSeg = STOCK_LEVELS.map(lv => {
+          const m = STOCK_META[lv];
+          const active = stock === lv ? ' active' : '';
+          return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
+            title="${m.label}" onclick="event.stopPropagation();setStock('${ing.id}','${lv}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.label}</span></button>`;
+        }).join('');
+
+        return `
+          <div class="${tileClass}" data-id="${ing.id}" title="${escapeHtml(ing.name)}（残量: ${STOCK_META[stock].label}）"
+            onclick="openIngredientActionSheet('${ing.id}')">
+            <div class="tile-top">
+              <span class="tile-gauge g-${stock}"><i></i></span>
+              <span class="tile-emoji">${getFoodEmoji(ing)}</span>
+              ${isRegular ? `<span class="tile-star" title="レギュラー食材">⭐</span>` : ''}
               ${buildExpiryBadge(ing)}
-              <div class="stock-seg card-stock-seg">${stockSeg}</div>
             </div>
-            <div class="ingredient-card-actions">
-              ${stock === 'none'
-                ? `<button class="btn-icon buy" title="買い物リストへ" onclick="addFridgeItemToShopping('${ing.id}')">🛒</button>`
-                : ''}
-              <button class="btn-icon ${isRegular ? 'regular-active' : ''}" title="${isRegular ? 'レギュラー設定を変更' : 'レギュラー食材に設定'}"
-                onclick="showSetRegularModal('${escapeHtml(ing.name)}', '${ing.id}')">⭐</button>
-              <button class="btn-icon" title="編集" onclick="showEditIngredientModal('${ing.id}')">✏️</button>
-              <button class="btn-icon danger" title="削除" onclick="deleteIngredient('${ing.id}')">🗑️</button>
-            </div>
+            <span class="tile-name">${escapeHtml(ing.name)}</span>
+            <div class="stock-seg tile-stock-seg">${stockSeg}</div>
           </div>`;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
+      }).join('');
+
+      return `
+        <div class="fridge-shelf${shelfMod}">
+          <div class="shelf-label">
+            <span class="shelf-cat">${CATEGORY_EMOJIS[cat]} ${cat}</span>
+            <span class="shelf-badges">${shelfBadges}</span>
+          </div>
+          <div class="shelf-items">${tiles}</div>
+        </div>`;
+    }).join('');
+
+  container.innerHTML = banners + `<div class="fridge-unit">${shelves}</div>`;
 
   // バッジ更新
   updateRegularAlertBadge();
   updateExpiryAlertBadge();
+}
+
+// 食材タイルをタップしたときのアクションシート（残量変更・編集・削除など）
+function openIngredientActionSheet(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  if (!ing) return;
+
+  const stock = STOCK_LEVELS.includes(ing.stock) ? ing.stock : 'plenty';
+  const isRegular = state.regularSettings.some(
+    r => r.name.toLowerCase() === ing.name.toLowerCase()
+  );
+
+  const stockSeg = STOCK_LEVELS.map(lv => {
+    const m = STOCK_META[lv];
+    const active = stock === lv ? ' active' : '';
+    return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
+      onclick="setStock('${ing.id}','${lv}');openIngredientActionSheet('${ing.id}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.label}</span></button>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>${getFoodEmoji(ing)} ${escapeHtml(ing.name)}</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>残量</label>
+        <div class="stock-seg sheet-stock-seg">${stockSeg}</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" onclick="closeModal();addFridgeItemToShopping('${ing.id}')">🛒 買い物リストへ</button>
+        <button class="btn btn-ghost" onclick="showSetRegularModal('${escapeHtml(ing.name)}', '${ing.id}')">⭐ ${isRegular ? 'レギュラー設定を変更' : 'レギュラーに設定'}</button>
+        <button class="btn btn-ghost" onclick="showEditIngredientModal('${ing.id}')">✏️ 編集する</button>
+        <button class="btn btn-ghost sheet-danger" onclick="closeModal();deleteIngredient('${ing.id}')">🗑️ 削除する</button>
+      </div>
+    </div>
+  `);
 }
 
 function addRegularToShopping(regId) {
