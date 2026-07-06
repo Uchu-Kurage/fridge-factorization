@@ -1732,7 +1732,7 @@ function showRecipeFormModal(recipeId = null) {
       <h2>${title}</h2>
       <button class="modal-close-btn" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
+    <div class="modal-body recipe-form-body" style="max-height:65vh;overflow-y:auto;">
       <div class="form-group">
         <label>レシピ名 <span class="required">*</span></label>
         <input type="text" id="cr-name" class="form-input" placeholder="例: 特製カレー" value="${nameVal}" />
