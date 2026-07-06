@@ -1146,6 +1146,10 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* === CUSTOM RECIPE FORM === */
+/* スクロールするレシピ入力フォームでは、子要素が縮んで
+   食材リストが潰れ入力欄と重なるのを防ぐ */
+.recipe-form-body > * { flex-shrink: 0; }
+
 .cr-dynamic-list {
   display: flex;
   flex-direction: column;
