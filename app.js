@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   INGREDIENTS: 'fridge_ingredients',
   SHOPPING: 'fridge_shopping',
   CUSTOM_RECIPES: 'fridge_custom_recipes',
+  RECIPE_OVERRIDES: 'fridge_recipe_overrides',
   REGULAR_SETTINGS: 'fridge_regular_settings',
 };
 
@@ -891,6 +892,7 @@ let state = {
   ingredients: [],
   shoppingList: [],
   customRecipes: [],
+  recipeOverrides: {},   // 組み込みレシピの編集内容（id → 上書きレシピ）
   regularSettings: [],   // レギュラー食材設定
   activeTab: 'fridge',
   fridgeSearch: '',
@@ -905,6 +907,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(state.ingredients));
   localStorage.setItem(STORAGE_KEYS.SHOPPING, JSON.stringify(state.shoppingList));
   localStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(state.customRecipes));
+  localStorage.setItem(STORAGE_KEYS.RECIPE_OVERRIDES, JSON.stringify(state.recipeOverrides));
   localStorage.setItem(STORAGE_KEYS.REGULAR_SETTINGS, JSON.stringify(state.regularSettings));
   // Update shopping badge whenever state is saved
   const badge = document.getElementById('shopping-badge');
@@ -924,11 +927,13 @@ function loadState() {
     state.ingredients = JSON.parse(localStorage.getItem(STORAGE_KEYS.INGREDIENTS) || '[]');
     state.shoppingList = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPPING) || '[]');
     state.customRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES) || '[]');
+    state.recipeOverrides = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECIPE_OVERRIDES) || '{}');
     state.regularSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGULAR_SETTINGS) || '[]');
   } catch {
     state.ingredients = [];
     state.shoppingList = [];
     state.customRecipes = [];
+    state.recipeOverrides = {};
     state.regularSettings = [];
   }
   migrateState();
@@ -958,7 +963,14 @@ function generateId() {
 }
 
 function getAllRecipes() {
-  return [...BUILT_IN_RECIPES, ...state.customRecipes];
+  // 組み込みレシピは編集内容（overrides）があればそちらを優先する
+  const builtIns = BUILT_IN_RECIPES.map(r => state.recipeOverrides[r.id] || r);
+  return [...builtIns, ...state.customRecipes];
+}
+
+// 組み込みレシピが編集済みか（デフォルトから変更されているか）
+function isRecipeOverridden(id) {
+  return Object.prototype.hasOwnProperty.call(state.recipeOverrides, id);
 }
 
 // 在庫が「なし」でない＝実際に手元にある食材だけを返す
@@ -1580,6 +1592,7 @@ function showRecipeDetailModal(recipeId) {
     <div class="modal-footer">
       ${missingShoppingBtns}
       ${cookBtn}
+      <button class="btn btn-secondary" onclick="showRecipeFormModal('${recipeId}')">✏️ 編集</button>
       <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
     </div>
   `);
@@ -1681,27 +1694,48 @@ function addMissingToShopping(recipeId) {
   }
 }
 
-// ==================== MODAL: ADD CUSTOM RECIPE ====================
+// ==================== MODAL: ADD / EDIT RECIPE ====================
 let tmpRecipeIngs = [];
 let tmpRecipeSteps = [];
+let editingRecipeId = null;   // 編集中のレシピID（新規追加時は null）
 
+// 後方互換のためのエイリアス（新規追加）
 function showAddRecipeModal() {
-  tmpRecipeIngs = [];
-  tmpRecipeSteps = [];
+  showRecipeFormModal(null);
+}
+
+// recipeId を渡すと編集モード、null で新規追加モード
+function showRecipeFormModal(recipeId = null) {
+  editingRecipeId = recipeId;
+  const editing = recipeId ? getAllRecipes().find(r => r.id === recipeId) : null;
+
+  // 既存レシピの内容をフォームの作業用配列にコピー（元データは変更しない）
+  tmpRecipeIngs = editing ? editing.requiredIngredients.map(ri => ({ ...ri })) : [];
+  tmpRecipeSteps = editing ? [...editing.steps] : [];
 
   const catOptions = RECIPE_CATEGORIES.map(c =>
-    `<option value="${c}">${CATEGORY_EMOJIS[c]} ${c}</option>`
+    `<option value="${c}"${editing && editing.category === c ? ' selected' : ''}>${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
+
+  const title = editing ? '✏️ レシピを編集' : '📝 カスタムレシピを追加';
+  const nameVal = editing ? escapeHtml(editing.name) : '';
+  const emojiVal = editing ? escapeHtml(editing.emoji) : '🍴';
+  const descVal = editing ? escapeHtml(editing.description) : '';
+
+  // 編集済みの組み込みレシピには「デフォルトに戻す」ボタンを表示
+  const resetBtn = (editing && !editing.isCustom && isRecipeOverridden(editing.id))
+    ? `<button class="btn btn-ghost" onclick="resetRecipeToDefault('${editing.id}')">↩️ デフォルトに戻す</button>`
+    : '';
 
   openModal(`
     <div class="modal-header">
-      <h2>📝 カスタムレシピを追加</h2>
+      <h2>${title}</h2>
       <button class="modal-close-btn" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
       <div class="form-group">
         <label>レシピ名 <span class="required">*</span></label>
-        <input type="text" id="cr-name" class="form-input" placeholder="例: 特製カレー" />
+        <input type="text" id="cr-name" class="form-input" placeholder="例: 特製カレー" value="${nameVal}" />
       </div>
       <div class="form-row">
         <div class="form-group flex-1">
@@ -1710,12 +1744,12 @@ function showAddRecipeModal() {
         </div>
         <div class="form-group flex-1">
           <label>絵文字</label>
-          <input type="text" id="cr-emoji" class="form-input" value="🍴" maxlength="2" style="font-size:1.5rem;text-align:center;" />
+          <input type="text" id="cr-emoji" class="form-input" value="${emojiVal}" maxlength="2" style="font-size:1.5rem;text-align:center;" />
         </div>
       </div>
       <div class="form-group">
         <label>説明</label>
-        <textarea id="cr-desc" class="form-textarea" placeholder="料理の説明を入力"></textarea>
+        <textarea id="cr-desc" class="form-textarea" placeholder="料理の説明を入力">${descVal}</textarea>
       </div>
 
       <div class="form-section-title">🥗 必要な食材</div>
@@ -1738,8 +1772,9 @@ function showAddRecipeModal() {
       </div>
     </div>
     <div class="modal-footer">
+      ${resetBtn}
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="submitAddRecipe()">保存する ✨</button>
+      <button class="btn btn-primary" onclick="submitRecipeForm()">保存する ✨</button>
     </div>
   `);
   renderCRIngsList();
@@ -1806,7 +1841,7 @@ function renderCRStepsList() {
   `).join('');
 }
 
-function submitAddRecipe() {
+function submitRecipeForm() {
   const name = document.getElementById('cr-name').value.trim();
   const category = document.getElementById('cr-category').value;
   const emoji = document.getElementById('cr-emoji').value.trim() || '🍴';
@@ -1815,19 +1850,62 @@ function submitAddRecipe() {
   if (!name) { showToast('レシピ名を入力してください', 'error'); return; }
   if (tmpRecipeIngs.length === 0) { showToast('食材を追加してください', 'error'); return; }
 
-  const newRecipe = {
-    id: generateId(),
-    name, category, emoji, description,
-    requiredIngredients: [...tmpRecipeIngs],
-    steps: [...tmpRecipeSteps],
-    isCustom: true,
-  };
-  state.customRecipes.push(newRecipe);
+  const requiredIngredients = tmpRecipeIngs.map(ri => ({ ...ri }));
+  const steps = [...tmpRecipeSteps];
+
+  if (editingRecipeId) {
+    // === 編集モード ===
+    const custom = state.customRecipes.find(r => r.id === editingRecipeId);
+    if (custom) {
+      // カスタムレシピはその場で更新
+      Object.assign(custom, { name, category, emoji, description, requiredIngredients, steps });
+    } else {
+      // 組み込みレシピは overrides に編集内容を保存（元の定義は保持）
+      state.recipeOverrides[editingRecipeId] = {
+        id: editingRecipeId,
+        name, category, emoji, description,
+        requiredIngredients, steps,
+        isCustom: false,
+      };
+    }
+    saveState();
+    closeModal();
+    renderLibraryTab();
+    renderSuggestTab();
+    showToast(`「${name}」を更新しました！✨`, 'success');
+  } else {
+    // === 新規追加モード ===
+    const newRecipe = {
+      id: generateId(),
+      name, category, emoji, description,
+      requiredIngredients, steps,
+      isCustom: true,
+    };
+    state.customRecipes.push(newRecipe);
+    saveState();
+    closeModal();
+    renderLibraryTab();
+    renderSuggestTab();
+    showToast(`「${name}」を追加しました！🎉`, 'success');
+  }
+}
+
+// 後方互換のためのエイリアス
+function submitAddRecipe() {
+  submitRecipeForm();
+}
+
+// 組み込みレシピの編集内容を破棄してデフォルトに戻す
+function resetRecipeToDefault(id) {
+  const def = BUILT_IN_RECIPES.find(r => r.id === id);
+  if (!def) return;
+  if (!confirm(`「${def.name}」をデフォルトの内容に戻しますか？`)) return;
+  delete state.recipeOverrides[id];
   saveState();
   closeModal();
   renderLibraryTab();
   renderSuggestTab();
-  showToast(`「${name}」を追加しました！🎉`, 'success');
+  showToast(`${def.name} をデフォルトに戻しました`, 'info');
 }
 
 function deleteCustomRecipe(id) {
@@ -2632,6 +2710,7 @@ function renderLibraryTab() {
           <div class="recipe-card-meta">
             <span class="category-tag">${recipe.category}</span>
             ${recipe.isCustom ? '<span class="custom-tag">カスタム</span>' : ''}
+            ${!recipe.isCustom && isRecipeOverridden(recipe.id) ? '<span class="edited-tag">編集済み</span>' : ''}
           </div>
           <p class="recipe-desc-sm">${escapeHtml(recipe.description)}</p>
           <div class="match-bar-mini">
@@ -2639,7 +2718,10 @@ function renderLibraryTab() {
           </div>
           <span class="match-pct-mini">${info.percentage}%</span>
         </div>
-        ${recipe.isCustom ? `<button class="delete-recipe-btn" onclick="event.stopPropagation();deleteCustomRecipe('${recipe.id}')">🗑️</button>` : ''}
+        <div class="recipe-card-actions">
+          <button class="edit-recipe-btn" onclick="event.stopPropagation();showRecipeFormModal('${recipe.id}')">✏️</button>
+          ${recipe.isCustom ? `<button class="delete-recipe-btn" onclick="event.stopPropagation();deleteCustomRecipe('${recipe.id}')">🗑️</button>` : ''}
+        </div>
       </div>`;
   }).join('')}</div>`;
 }

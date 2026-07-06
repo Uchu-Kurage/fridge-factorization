@@ -813,17 +813,22 @@ a { text-decoration: none; color: inherit; }
   color: var(--text-muted);
 }
 
-.delete-recipe-btn {
+.recipe-card-actions {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.edit-recipe-btn,
+.delete-recipe-btn {
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  background: var(--color-danger-light);
   font-size: 0.7rem;
   border: none;
   cursor: pointer;
@@ -831,7 +836,20 @@ a { text-decoration: none; color: inherit; }
   transition: var(--transition);
 }
 
+.edit-recipe-btn { background: var(--color-primary-light); }
+.delete-recipe-btn { background: var(--color-danger-light); }
+
+.recipe-card:hover .edit-recipe-btn,
 .recipe-card:hover .delete-recipe-btn { opacity: 1; }
+
+.edited-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
 
 /* === SECTION TITLES === */
 .section-title {
