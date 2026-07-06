@@ -488,6 +488,206 @@ a { text-decoration: none; color: inherit; }
 .ingredient-card.stock-card-none:hover { opacity: 1; }
 .btn-icon.buy:hover { background: var(--color-secondary-light); }
 
+/* ============================================================
+   冷蔵庫イラストビュー（棚に食材を並べ、残量を一目で視認）
+   ============================================================ */
+.fridge-unit {
+  border-radius: var(--radius-lg);
+  padding: 10px 10px 14px;
+  /* 冷たい庫内の光。フレームはテーマのピンクで縁取り */
+  background: linear-gradient(180deg, #F4FAFF 0%, #EAF3FB 100%);
+  border: 3px solid var(--color-primary-light);
+  box-shadow: var(--shadow-md), inset 0 2px 12px rgba(120, 160, 200, 0.14);
+}
+
+/* --- 棚 --- */
+.fridge-shelf {
+  position: relative;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-md);
+  padding: 8px 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(120, 160, 200, 0.12);
+}
+.fridge-shelf:last-child { margin-bottom: 0; }
+/* ガラス棚板のフチ */
+.fridge-shelf::after {
+  content: '';
+  position: absolute;
+  left: 6px; right: 6px; bottom: 4px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, rgba(160, 200, 235, 0.15), rgba(160, 200, 235, 0.55), rgba(160, 200, 235, 0.15));
+}
+/* 野菜室（ドロワー）風 */
+.fridge-shelf.shelf--drawer {
+  background: rgba(230, 248, 238, 0.78);
+  border: 1.5px solid rgba(76, 175, 138, 0.28);
+}
+.fridge-shelf.shelf--drawer::after {
+  background: linear-gradient(90deg, rgba(76, 175, 138, 0.12), rgba(76, 175, 138, 0.45), rgba(76, 175, 138, 0.12));
+}
+/* ドアポケット（調味料）風：手前にリップ */
+.fridge-shelf.shelf--door {
+  background: rgba(255, 246, 250, 0.82);
+  border: 1.5px solid var(--color-primary-light);
+}
+.fridge-shelf.shelf--door::after {
+  height: 6px;
+  background: linear-gradient(90deg, rgba(255, 143, 171, 0.18), rgba(255, 143, 171, 0.5), rgba(255, 143, 171, 0.18));
+}
+
+/* --- 棚ラベル --- */
+.shelf-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.shelf-cat {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+.shelf-badges { display: flex; gap: 5px; flex-shrink: 0; }
+.shelf-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.shelf-badge-low  { color: #C98A20; background: var(--color-warning-light); }
+.shelf-badge-none { color: var(--color-danger); background: var(--color-danger-light); }
+
+/* --- 食材タイル --- */
+.shelf-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.food-tile {
+  position: relative;
+  width: 92px;
+  flex: 0 0 auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.food-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+.food-tile:active { transform: translateY(-1px); }
+
+.tile-top {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+}
+.tile-emoji { font-size: 1.9rem; line-height: 1; }
+
+/* 残量ゲージ（本機能の主役：塗り高さ＋色で残量を表現） */
+.tile-gauge {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  width: 7px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: #E7ECF2;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.tile-gauge i {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-full);
+  transition: height 0.25s ease;
+}
+.tile-gauge.g-plenty i { height: 100%; background: var(--color-success); }
+.tile-gauge.g-low    i { height: 35%;  background: var(--color-warning); }
+.tile-gauge.g-none {
+  background: transparent;
+  border: 1.5px dashed var(--text-muted);
+}
+.tile-gauge.g-none i { height: 0; }
+
+.tile-star {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.food-tile .expiry-badge {
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  font-size: 0.58rem;
+  padding: 1px 5px;
+  transform: scale(0.92);
+  transform-origin: left top;
+}
+
+.tile-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* タイル内のコンパクト残量セグメント（非選択はアイコンのみ） */
+.tile-stock-seg { width: 100%; justify-content: center; gap: 3px; }
+.tile-stock-seg .stock-seg-btn {
+  flex: 0 0 auto;
+  padding: 3px 5px;
+  font-size: 0.65rem;
+}
+.tile-stock-seg .stock-seg-label { display: none; }
+.tile-stock-seg .stock-seg-ic { font-size: 0.66rem; line-height: 1; }
+
+/* 状態別のタイル装飾 */
+.food-tile.stock-none { opacity: 0.6; border-style: dashed; }
+.food-tile.stock-none:hover { opacity: 1; }
+.food-tile.tile-alert   { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
+.food-tile.tile-expired { border-color: var(--color-danger); }
+.food-tile.tile-today   { border-color: var(--color-danger); }
+.food-tile.tile-soon    { border-color: var(--color-warning); }
+
+/* --- アクションシート（タイルタップ時） --- */
+.sheet-stock-seg .stock-seg-btn { padding: 8px 6px; font-size: 0.8rem; }
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.sheet-actions .btn { width: 100%; justify-content: center; }
+.sheet-actions .sheet-danger { color: var(--color-danger); }
+.sheet-actions .sheet-danger:hover { background: var(--color-danger-light); }
+
 /* 「作る」確認モーダル */
 .cook-confirm-desc { font-size: 0.85rem; color: var(--text-secondary, #8a8a8a); margin-bottom: 12px; }
 .cook-confirm-list { display: flex; flex-direction: column; gap: 12px; }
