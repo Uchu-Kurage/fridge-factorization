@@ -2192,13 +2192,13 @@ function renderFridgeTab() {
   if (search) ings = ings.filter(i => i.name.toLowerCase().includes(search));
   if (filter !== 'all') ings = ings.filter(i => i.category === filter);
 
-  // Group by category（在庫切れの食材は棚の後ろに並べる）
+  // Group by category（在庫の多い順：たっぷり → 少なめ → 切れ）
   const groups = {};
   for (const cat of INGREDIENT_CATEGORIES) {
     const items = ings
       .filter(i => i.category === cat)
       .sort((a, b) =>
-        ((a.stock || 'plenty') === 'none') - ((b.stock || 'plenty') === 'none')
+        STOCK_RANK[b.stock || 'plenty'] - STOCK_RANK[a.stock || 'plenty']
       );
     if (items.length > 0) groups[cat] = items;
   }
