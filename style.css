@@ -924,16 +924,6 @@ a { text-decoration: none; color: inherit; }
   color: var(--text-muted);
 }
 
-.shopping-item-qty {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-accent);
-  background: var(--color-accent-light);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  white-space: nowrap;
-}
-
 .shopping-from-recipe {
   font-size: 0.68rem;
   color: var(--text-muted);

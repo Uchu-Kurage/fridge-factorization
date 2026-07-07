@@ -814,102 +814,102 @@ const BUILT_IN_RECIPES = [
 // === QUICK INGREDIENT PRESETS ===
 const QUICK_INGREDIENTS = [
   // 野菜
-  { name: '玉ねぎ',       category: '野菜',      quantity: 3,   unit: '個' },
-  { name: 'にんじん',     category: '野菜',      quantity: 2,   unit: '本' },
-  { name: 'じゃがいも',   category: '野菜',      quantity: 4,   unit: '個' },
-  { name: 'キャベツ',     category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'トマト',       category: '野菜',      quantity: 3,   unit: '個' },
-  { name: 'きゅうり',     category: '野菜',      quantity: 2,   unit: '本' },
-  { name: 'もやし',       category: '野菜',      quantity: 1,   unit: '袋' },
-  { name: 'ほうれん草',   category: '野菜',      quantity: 1,   unit: '束' },
-  { name: '小松菜',       category: '野菜',      quantity: 1,   unit: '束' },
-  { name: '空芯菜',       category: '野菜',      quantity: 1,   unit: '束' },
-  { name: 'とうもろこし', category: '野菜',      quantity: 1,   unit: '本' },
-  { name: 'アスパラガス', category: '野菜',      quantity: 1,   unit: '束' },
-  { name: 'ブロッコリー', category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'ニンニクの芽', category: '野菜',      quantity: 1,   unit: '束' },
-  { name: 'ネギ',         category: '野菜',      quantity: 2,   unit: '本' },
-  { name: 'にんにく',     category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'しょうが',     category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'ごぼう',       category: '野菜',      quantity: 1,   unit: '本' },
-  { name: '大根',         category: '野菜',      quantity: 1,   unit: '本' },
-  { name: 'ピーマン',     category: '野菜',      quantity: 3,   unit: '個' },
-  { name: 'しいたけ',     category: '野菜',      quantity: 4,   unit: '個' },
-  { name: 'しめじ',       category: '野菜',      quantity: 1,   unit: 'パック' },
-  { name: 'エリンギ',     category: '野菜',      quantity: 1,   unit: 'パック' },
-  { name: 'えのき',       category: '野菜',      quantity: 1,   unit: 'パック' },
-  { name: 'なす',         category: '野菜',      quantity: 3,   unit: '本' },
-  { name: 'かぼちゃ',     category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'レタス',       category: '野菜',      quantity: 1,   unit: '個' },
-  { name: 'ごま',         category: '野菜',      quantity: 1,   unit: '袋' },
+  { name: '玉ねぎ',       category: '野菜' },
+  { name: 'にんじん',     category: '野菜' },
+  { name: 'じゃがいも',   category: '野菜' },
+  { name: 'キャベツ',     category: '野菜' },
+  { name: 'トマト',       category: '野菜' },
+  { name: 'きゅうり',     category: '野菜' },
+  { name: 'もやし',       category: '野菜' },
+  { name: 'ほうれん草',   category: '野菜' },
+  { name: '小松菜',       category: '野菜' },
+  { name: '空芯菜',       category: '野菜' },
+  { name: 'とうもろこし', category: '野菜' },
+  { name: 'アスパラガス', category: '野菜' },
+  { name: 'ブロッコリー', category: '野菜' },
+  { name: 'ニンニクの芽', category: '野菜' },
+  { name: 'ネギ',         category: '野菜' },
+  { name: 'にんにく',     category: '野菜' },
+  { name: 'しょうが',     category: '野菜' },
+  { name: 'ごぼう',       category: '野菜' },
+  { name: '大根',         category: '野菜' },
+  { name: 'ピーマン',     category: '野菜' },
+  { name: 'しいたけ',     category: '野菜' },
+  { name: 'しめじ',       category: '野菜' },
+  { name: 'エリンギ',     category: '野菜' },
+  { name: 'えのき',       category: '野菜' },
+  { name: 'なす',         category: '野菜' },
+  { name: 'かぼちゃ',     category: '野菜' },
+  { name: 'レタス',       category: '野菜' },
+  { name: 'ごま',         category: '野菜' },
   // 肉・魚
-  { name: '豚肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
-  { name: '鶏肉',         category: '肉・魚',    quantity: 300, unit: 'g' },
-  { name: '牛肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
-  { name: '豚ひき肉',     category: '肉・魚',    quantity: 200, unit: 'g' },
-  { name: '鶏ひき肉',     category: '肉・魚',    quantity: 200, unit: 'g' },
-  { name: 'ベーコン',     category: '肉・魚',    quantity: 100, unit: 'g' },
-  { name: '鮭',           category: '肉・魚',    quantity: 2,   unit: '枚' },
-  { name: 'まぐろ',       category: '肉・魚',    quantity: 100, unit: 'g' },
-  { name: 'えび',         category: '肉・魚',    quantity: 10,  unit: '尾' },
-  { name: 'いか',         category: '肉・魚',    quantity: 1,   unit: '杯' },
-  { name: 'ソーセージ',   category: '肉・魚',    quantity: 1,   unit: '袋' },
-  { name: 'ウインナー',   category: '肉・魚',    quantity: 1,   unit: '袋' },
-  { name: 'ハム',         category: '肉・魚',    quantity: 1,   unit: 'パック' },
+  { name: '豚肉',         category: '肉・魚' },
+  { name: '鶏肉',         category: '肉・魚' },
+  { name: '牛肉',         category: '肉・魚' },
+  { name: '豚ひき肉',     category: '肉・魚' },
+  { name: '鶏ひき肉',     category: '肉・魚' },
+  { name: 'ベーコン',     category: '肉・魚' },
+  { name: '鮭',           category: '肉・魚' },
+  { name: 'まぐろ',       category: '肉・魚' },
+  { name: 'えび',         category: '肉・魚' },
+  { name: 'いか',         category: '肉・魚' },
+  { name: 'ソーセージ',   category: '肉・魚' },
+  { name: 'ウインナー',   category: '肉・魚' },
+  { name: 'ハム',         category: '肉・魚' },
   // 卵・乳製品
-  { name: '卵',           category: '卵・乳製品', quantity: 6,   unit: '個' },
-  { name: '牛乳',         category: '卵・乳製品', quantity: 1,   unit: 'L' },
-  { name: 'バター',       category: '卵・乳製品', quantity: 200, unit: 'g' },
-  { name: '生クリーム',   category: '卵・乳製品', quantity: 200, unit: 'ml' },
-  { name: '豆腐',         category: '卵・乳製品', quantity: 1,   unit: '個' },
-  { name: 'チーズ',       category: '卵・乳製品', quantity: 1,   unit: '個' },
-  { name: 'ヨーグルト',   category: '卵・乳製品', quantity: 1,   unit: '個' },
+  { name: '卵',           category: '卵・乳製品' },
+  { name: '牛乳',         category: '卵・乳製品' },
+  { name: 'バター',       category: '卵・乳製品' },
+  { name: '生クリーム',   category: '卵・乳製品' },
+  { name: '豆腐',         category: '卵・乳製品' },
+  { name: 'チーズ',       category: '卵・乳製品' },
+  { name: 'ヨーグルト',   category: '卵・乳製品' },
 
   // 調味料
-  { name: '醤油',         category: '調味料',    quantity: 300, unit: 'ml' },
-  { name: 'みりん',       category: '調味料',    quantity: 200, unit: 'ml' },
-  { name: '料理酒',       category: '調味料',    quantity: 200, unit: 'ml' },
-  { name: '砂糖',         category: '調味料',    quantity: 200, unit: 'g' },
-  { name: '塩',           category: '調味料',    quantity: 100, unit: 'g' },
-  { name: 'こしょう',     category: '調味料',    quantity: 1,   unit: '個' },
-  { name: 'ごま油',       category: '調味料',    quantity: 100, unit: 'ml' },
-  { name: 'オリーブオイル', category: '調味料',  quantity: 200, unit: 'ml' },
-  { name: '味噌',         category: '調味料',    quantity: 200, unit: 'g' },
-  { name: 'ケチャップ',   category: '調味料',    quantity: 1,   unit: '個' },
-  { name: 'マヨネーズ',   category: '調味料',    quantity: 1,   unit: '個' },
-  { name: '豆板醤',       category: '調味料',    quantity: 1,   unit: '個' },
-  { name: 'めんつゆ',     category: '調味料',    quantity: 200, unit: 'ml' },
-  { name: 'コンソメ',     category: '調味料',    quantity: 1,   unit: '個' },
-  { name: '甜麺醤',       category: '調味料',    quantity: 1,   unit: '個' },
-  { name: 'オイスターソース', category: '調味料',  quantity: 1,   unit: '個' },
-  { name: 'ソース',       category: '調味料',    quantity: 1,   unit: '個' },
-  { name: '酢',           category: '調味料',    quantity: 200, unit: 'ml' },
-  { name: 'カレー粉',     category: '調味料',    quantity: 1,   unit: '個' },
-  { name: 'だし',         category: '調味料',    quantity: 1,   unit: '袋' },
+  { name: '醤油',         category: '調味料' },
+  { name: 'みりん',       category: '調味料' },
+  { name: '料理酒',       category: '調味料' },
+  { name: '砂糖',         category: '調味料' },
+  { name: '塩',           category: '調味料' },
+  { name: 'こしょう',     category: '調味料' },
+  { name: 'ごま油',       category: '調味料' },
+  { name: 'オリーブオイル', category: '調味料' },
+  { name: '味噌',         category: '調味料' },
+  { name: 'ケチャップ',   category: '調味料' },
+  { name: 'マヨネーズ',   category: '調味料' },
+  { name: '豆板醤',       category: '調味料' },
+  { name: 'めんつゆ',     category: '調味料' },
+  { name: 'コンソメ',     category: '調味料' },
+  { name: '甜麺醤',       category: '調味料' },
+  { name: 'オイスターソース', category: '調味料' },
+  { name: 'ソース',       category: '調味料' },
+  { name: '酢',           category: '調味料' },
+  { name: 'カレー粉',     category: '調味料' },
+  { name: 'だし',         category: '調味料' },
   // 乾物・缶詰
-  { name: 'パスタ',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
-  { name: 'そば',         category: '乾物・缶詰', quantity: 200, unit: 'g' },
-  { name: '春雨',         category: '乾物・缶詰', quantity: 50,  unit: 'g' },
-  { name: 'ツナ缶',       category: '乾物・缶詰', quantity: 1,   unit: '缶' },
-  { name: 'ひじき',       category: '乾物・缶詰', quantity: 20,  unit: 'g' },
-  { name: '薄力粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
-  { name: 'うどん',       category: '乾物・缶詰', quantity: 1,   unit: '袋' },
-  { name: '小麦粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
-  { name: 'のり',         category: '乾物・缶詰', quantity: 1,   unit: '袋' },
-  { name: '乾燥わかめ',   category: '乾物・缶詰', quantity: 20,  unit: 'g' },
-  { name: 'トマト缶',     category: '乾物・缶詰', quantity: 1,   unit: '缶' },
-  { name: 'コーン缶',     category: '乾物・缶詰', quantity: 1,   unit: '缶' },
-  { name: '大豆',         category: '乾物・缶詰', quantity: 1,   unit: '袋' },
+  { name: 'パスタ',       category: '乾物・缶詰' },
+  { name: 'そば',         category: '乾物・缶詰' },
+  { name: '春雨',         category: '乾物・缶詰' },
+  { name: 'ツナ缶',       category: '乾物・缶詰' },
+  { name: 'ひじき',       category: '乾物・缶詰' },
+  { name: '薄力粉',       category: '乾物・缶詰' },
+  { name: 'うどん',       category: '乾物・缶詰' },
+  { name: '小麦粉',       category: '乾物・缶詰' },
+  { name: 'のり',         category: '乾物・缶詰' },
+  { name: '乾燥わかめ',   category: '乾物・缶詰' },
+  { name: 'トマト缶',     category: '乾物・缶詰' },
+  { name: 'コーン缶',     category: '乾物・缶詰' },
+  { name: '大豆',         category: '乾物・缶詰' },
   // その他
-  { name: 'ご飯',         category: 'その他',    quantity: 2,   unit: '個' },
-  { name: '油揚げ',       category: 'その他',    quantity: 2,   unit: '枚' },
-  { name: '餃子の皮',     category: 'その他',    quantity: 30,  unit: '枚' },
-  { name: '塩昆布',       category: 'その他',    quantity: 20,  unit: 'g' },
-  { name: '納豆',         category: 'その他',    quantity: 1,   unit: 'パック' },
-  { name: '米',           category: 'その他',    quantity: 5,   unit: 'kg' },
-  { name: 'パン',         category: 'その他',    quantity: 1,   unit: '斤' },
-  { name: 'こんにゃく',   category: 'その他',    quantity: 1,   unit: '個' },
-  { name: 'キムチ',       category: 'その他',    quantity: 1,   unit: 'パック' },
+  { name: 'ご飯',         category: 'その他' },
+  { name: '油揚げ',       category: 'その他' },
+  { name: '餃子の皮',     category: 'その他' },
+  { name: '塩昆布',       category: 'その他' },
+  { name: '納豆',         category: 'その他' },
+  { name: '米',           category: 'その他' },
+  { name: 'パン',         category: 'その他' },
+  { name: 'こんにゃく',   category: 'その他' },
+  { name: 'キムチ',       category: 'その他' },
 ];
 
 // === STATE ===
@@ -981,6 +981,11 @@ function migrateState() {
     if (!reg.alertAt) reg.alertAt = 'low';
     delete reg.minQuantity;
     delete reg.unit;
+  }
+  // 買い物リストは単位の概念を廃止（食材名のみで管理）
+  for (const item of state.shoppingList) {
+    delete item.quantity;
+    delete item.unit;
   }
 }
 
@@ -1061,8 +1066,6 @@ function addToShoppingList(item) {
     id: generateId(),
     name: item.name,
     category: item.category || 'その他',
-    quantity: item.quantity || 1,
-    unit: item.unit || '個',
     checked: false,
     fromRecipe: item.fromRecipe || null,
   });
@@ -1486,8 +1489,6 @@ function addFridgeItemToShopping(id) {
   addToShoppingList({
     name: ing.name,
     category: ing.category || (preset ? preset.category : 'その他'),
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
   });
   renderFridgeTab();
   showToast(`${ing.name} を買い物リストに追加しました 🛒`, 'success');
@@ -1703,8 +1704,6 @@ function addMissingToShopping(recipeId) {
       addToShoppingList({
         name: ri.name,
         category: 'その他',
-        quantity: ri.quantity,
-        unit: ri.unit,
         fromRecipe: recipe.name,
       });
       added++;
@@ -2374,8 +2373,6 @@ function addRegularToShopping(regId) {
     id: generateId(),
     name: reg.name,
     category: preset ? preset.category : 'その他',
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
     checked: false,
     addedAt: Date.now(),
   });
@@ -2483,7 +2480,6 @@ function renderShoppingTab() {
           <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}', this.checked)" />
           <span class="shopping-item-name">${escapeHtml(item.name)}</span>
         </label>
-        <span class="shopping-item-qty">${item.quantity}${item.unit}</span>
         ${item.fromRecipe ? `<span class="shopping-from-recipe">📍 ${escapeHtml(item.fromRecipe)}</span>` : ''}
         <button class="btn-icon danger" onclick="deleteShoppingItem('${item.id}')">🗑️</button>
       </div>`;
@@ -2631,14 +2627,12 @@ function renderShoppingRecommendations() {
 }
 
 function addRecToShopping(name) {
-  // QUICK_INGREDIENTSからデフォルト値を探す
+  // QUICK_INGREDIENTSからカテゴリを探す
   const preset = QUICK_INGREDIENTS.find(q => q.name === name);
   state.shoppingList.push({
     id: generateId(),
     name,
     category: preset ? preset.category : 'その他',
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
     checked: false,
     addedAt: Date.now(),
   });
@@ -2671,7 +2665,6 @@ function movePurchasedToFridgeUI() {
 }
 
 function showAddShoppingModal() {
-  const unitOptions = UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
     `<option value="${c}">${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
@@ -2690,16 +2683,6 @@ function showAddShoppingModal() {
         <label>カテゴリ</label>
         <select id="sh-category" class="form-select">${catOptions}</select>
       </div>
-      <div class="form-row">
-        <div class="form-group flex-1">
-          <label>数量</label>
-          <input type="number" id="sh-qty" class="form-input" value="1" min="0" step="0.1" />
-        </div>
-        <div class="form-group flex-1">
-          <label>単位</label>
-          <select id="sh-unit" class="form-select">${unitOptions}</select>
-        </div>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
@@ -2712,10 +2695,8 @@ function showAddShoppingModal() {
 function submitAddShopping() {
   const name = document.getElementById('sh-name').value.trim();
   const category = document.getElementById('sh-category').value;
-  const quantity = parseFloat(document.getElementById('sh-qty').value);
-  const unit = document.getElementById('sh-unit').value;
   if (!name) { showToast('食材名を入力してください', 'error'); return; }
-  addToShoppingList({ name, category, quantity, unit });
+  addToShoppingList({ name, category });
   closeModal();
   renderShoppingTab();
   showToast(`${name} を買い物リストに追加しました 🛒`, 'success');
