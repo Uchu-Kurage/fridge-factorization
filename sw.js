@@ -8,7 +8,7 @@
 // ============================================================
 
 // キャッシュを更新したいときはこのバージョンを上げる
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `fridge-factorization-${CACHE_VERSION}`;
 
 // 事前キャッシュするアプリシェル
