@@ -945,6 +945,8 @@ function saveState() {
   updateRegularAlertBadge();
   // Update expiry alert badge
   updateExpiryAlertBadge();
+  // Update suggest badge（今すぐ作れるメニュー数）
+  updateSuggestBadge();
 }
 
 function loadState() {
@@ -2235,12 +2237,22 @@ function renderFridgeTab() {
   const banners = expiryBanner + regularBanner;
 
   if (ings.length === 0) {
-    container.innerHTML = banners + `
-      <div class="empty-state">
-        <div class="empty-icon">🧊</div>
-        <p>まだ食材が登録されていません</p>
-        <p class="empty-hint">「食材を追加」ボタンで登録しましょう！</p>
-      </div>`;
+    // 「食材が未登録」と「検索・フィルターでヒットなし」を区別して案内する
+    if (state.ingredients.length === 0) {
+      container.innerHTML = banners + `
+        <div class="empty-state">
+          <div class="empty-icon">🧊</div>
+          <p>まだ食材が登録されていません</p>
+          <p class="empty-hint">「食材を追加」ボタンで登録しましょう！</p>
+        </div>`;
+    } else {
+      container.innerHTML = banners + `
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <p>条件に一致する食材がありません</p>
+          <button class="btn btn-ghost btn-sm" onclick="clearFridgeFilters()">検索条件をクリア</button>
+        </div>`;
+    }
     return;
   }
 
@@ -2725,7 +2737,12 @@ function renderLibraryTab() {
   );
 
   if (recipes.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><p>レシピが見つかりません</p></div>`;
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <p>レシピが見つかりません</p>
+        <button class="btn btn-ghost btn-sm" onclick="clearLibraryFilters()">検索条件をクリア</button>
+      </div>`;
     return;
   }
 
@@ -2753,6 +2770,27 @@ function renderLibraryTab() {
         </div>
       </div>`;
   }).join('')}</div>`;
+}
+
+// 検索・フィルター条件をリセット（空状態の「クリア」ボタンから呼ばれる）
+function clearFridgeFilters() {
+  state.fridgeSearch = '';
+  state.fridgeCategoryFilter = 'all';
+  const input = document.getElementById('fridge-search');
+  if (input) input.value = '';
+  const sel = document.getElementById('fridge-cat-filter');
+  if (sel) sel.value = 'all';
+  renderFridgeTab();
+}
+
+function clearLibraryFilters() {
+  state.librarySearch = '';
+  state.libraryFilter = 'all';
+  const input = document.getElementById('library-search');
+  if (input) input.value = '';
+  const sel = document.getElementById('library-filter');
+  if (sel) sel.value = 'all';
+  renderLibraryTab();
 }
 
 // ==================== TAB SWITCHING ====================
@@ -2804,6 +2842,11 @@ function init() {
     if (e.target === e.currentTarget) closeModal();
   });
 
+  // Esc キーでモーダルを閉じる
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+
   // Fridge search
   document.getElementById('fridge-search').addEventListener('input', (e) => {
     state.fridgeSearch = e.target.value;
@@ -2851,12 +2894,22 @@ function init() {
 
   // Update badge on shopping tab nav
   updateShoppingBadge();
+  updateSuggestBadge();
 }
 
 function updateShoppingBadge() {
   const badge = document.getElementById('shopping-badge');
   if (!badge) return;
   const count = state.shoppingList.filter(i => !i.checked).length;
+  badge.textContent = count > 0 ? count : '';
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+// 提案タブのバッジに「今すぐ作れるメニュー数」を表示する
+function updateSuggestBadge() {
+  const badge = document.getElementById('suggest-badge');
+  if (!badge) return;
+  const count = getAllRecipes().filter(r => getRecipeMatchInfo(r).canMake).length;
   badge.textContent = count > 0 ? count : '';
   badge.style.display = count > 0 ? 'flex' : 'none';
 }
