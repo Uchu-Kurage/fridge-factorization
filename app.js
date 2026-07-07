@@ -2340,7 +2340,7 @@ function openIngredientActionSheet(id) {
     const m = STOCK_META[lv];
     const active = stock === lv ? ' active' : '';
     return `<button type="button" class="stock-seg-btn stock-seg-${lv}${active}"
-      onclick="setStock('${ing.id}','${lv}');openIngredientActionSheet('${ing.id}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.label}</span></button>`;
+      onclick="setStock('${ing.id}','${lv}');openIngredientActionSheet('${ing.id}')"><span class="stock-seg-ic">${m.icon}</span><span class="stock-seg-label">${m.fullLabel}</span></button>`;
   }).join('');
 
   openModal(`
