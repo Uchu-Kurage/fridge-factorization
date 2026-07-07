@@ -2190,10 +2190,14 @@ function renderFridgeTab() {
   if (search) ings = ings.filter(i => i.name.toLowerCase().includes(search));
   if (filter !== 'all') ings = ings.filter(i => i.category === filter);
 
-  // Group by category
+  // Group by category（在庫切れの食材は棚の後ろに並べる）
   const groups = {};
   for (const cat of INGREDIENT_CATEGORIES) {
-    const items = ings.filter(i => i.category === cat);
+    const items = ings
+      .filter(i => i.category === cat)
+      .sort((a, b) =>
+        ((a.stock || 'plenty') === 'none') - ((b.stock || 'plenty') === 'none')
+      );
     if (items.length > 0) groups[cat] = items;
   }
 
