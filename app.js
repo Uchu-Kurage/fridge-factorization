@@ -982,6 +982,11 @@ function migrateState() {
     delete reg.minQuantity;
     delete reg.unit;
   }
+  // 買い物リストは単位の概念を廃止（食材名のみで管理）
+  for (const item of state.shoppingList) {
+    delete item.quantity;
+    delete item.unit;
+  }
 }
 
 // === UTILS ===
@@ -1061,8 +1066,6 @@ function addToShoppingList(item) {
     id: generateId(),
     name: item.name,
     category: item.category || 'その他',
-    quantity: item.quantity || 1,
-    unit: item.unit || '個',
     checked: false,
     fromRecipe: item.fromRecipe || null,
   });
@@ -1486,8 +1489,6 @@ function addFridgeItemToShopping(id) {
   addToShoppingList({
     name: ing.name,
     category: ing.category || (preset ? preset.category : 'その他'),
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
   });
   renderFridgeTab();
   showToast(`${ing.name} を買い物リストに追加しました 🛒`, 'success');
@@ -1703,8 +1704,6 @@ function addMissingToShopping(recipeId) {
       addToShoppingList({
         name: ri.name,
         category: 'その他',
-        quantity: ri.quantity,
-        unit: ri.unit,
         fromRecipe: recipe.name,
       });
       added++;
@@ -2374,8 +2373,6 @@ function addRegularToShopping(regId) {
     id: generateId(),
     name: reg.name,
     category: preset ? preset.category : 'その他',
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
     checked: false,
     addedAt: Date.now(),
   });
@@ -2483,7 +2480,6 @@ function renderShoppingTab() {
           <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}', this.checked)" />
           <span class="shopping-item-name">${escapeHtml(item.name)}</span>
         </label>
-        <span class="shopping-item-qty">${item.quantity}${item.unit}</span>
         ${item.fromRecipe ? `<span class="shopping-from-recipe">📍 ${escapeHtml(item.fromRecipe)}</span>` : ''}
         <button class="btn-icon danger" onclick="deleteShoppingItem('${item.id}')">🗑️</button>
       </div>`;
@@ -2631,14 +2627,12 @@ function renderShoppingRecommendations() {
 }
 
 function addRecToShopping(name) {
-  // QUICK_INGREDIENTSからデフォルト値を探す
+  // QUICK_INGREDIENTSからカテゴリを探す
   const preset = QUICK_INGREDIENTS.find(q => q.name === name);
   state.shoppingList.push({
     id: generateId(),
     name,
     category: preset ? preset.category : 'その他',
-    quantity: preset ? preset.quantity : 1,
-    unit: preset ? preset.unit : '個',
     checked: false,
     addedAt: Date.now(),
   });
@@ -2671,7 +2665,6 @@ function movePurchasedToFridgeUI() {
 }
 
 function showAddShoppingModal() {
-  const unitOptions = UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
   const catOptions = INGREDIENT_CATEGORIES.map(c =>
     `<option value="${c}">${CATEGORY_EMOJIS[c]} ${c}</option>`
   ).join('');
@@ -2690,16 +2683,6 @@ function showAddShoppingModal() {
         <label>カテゴリ</label>
         <select id="sh-category" class="form-select">${catOptions}</select>
       </div>
-      <div class="form-row">
-        <div class="form-group flex-1">
-          <label>数量</label>
-          <input type="number" id="sh-qty" class="form-input" value="1" min="0" step="0.1" />
-        </div>
-        <div class="form-group flex-1">
-          <label>単位</label>
-          <select id="sh-unit" class="form-select">${unitOptions}</select>
-        </div>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
@@ -2712,10 +2695,8 @@ function showAddShoppingModal() {
 function submitAddShopping() {
   const name = document.getElementById('sh-name').value.trim();
   const category = document.getElementById('sh-category').value;
-  const quantity = parseFloat(document.getElementById('sh-qty').value);
-  const unit = document.getElementById('sh-unit').value;
   if (!name) { showToast('食材名を入力してください', 'error'); return; }
-  addToShoppingList({ name, category, quantity, unit });
+  addToShoppingList({ name, category });
   closeModal();
   renderShoppingTab();
   showToast(`${name} を買い物リストに追加しました 🛒`, 'success');
