@@ -838,6 +838,10 @@ const QUICK_INGREDIENTS = [
   { name: 'しめじ',       category: '野菜',      quantity: 1,   unit: 'パック' },
   { name: 'エリンギ',     category: '野菜',      quantity: 1,   unit: 'パック' },
   { name: 'えのき',       category: '野菜',      quantity: 1,   unit: 'パック' },
+  { name: 'なす',         category: '野菜',      quantity: 3,   unit: '本' },
+  { name: 'かぼちゃ',     category: '野菜',      quantity: 1,   unit: '個' },
+  { name: 'レタス',       category: '野菜',      quantity: 1,   unit: '個' },
+  { name: 'ごま',         category: '野菜',      quantity: 1,   unit: '袋' },
   // 肉・魚
   { name: '豚肉',         category: '肉・魚',    quantity: 200, unit: 'g' },
   { name: '鶏肉',         category: '肉・魚',    quantity: 300, unit: 'g' },
@@ -846,6 +850,12 @@ const QUICK_INGREDIENTS = [
   { name: '鶏ひき肉',     category: '肉・魚',    quantity: 200, unit: 'g' },
   { name: 'ベーコン',     category: '肉・魚',    quantity: 100, unit: 'g' },
   { name: '鮭',           category: '肉・魚',    quantity: 2,   unit: '枚' },
+  { name: 'まぐろ',       category: '肉・魚',    quantity: 100, unit: 'g' },
+  { name: 'えび',         category: '肉・魚',    quantity: 10,  unit: '尾' },
+  { name: 'いか',         category: '肉・魚',    quantity: 1,   unit: '杯' },
+  { name: 'ソーセージ',   category: '肉・魚',    quantity: 1,   unit: '袋' },
+  { name: 'ウインナー',   category: '肉・魚',    quantity: 1,   unit: '袋' },
+  { name: 'ハム',         category: '肉・魚',    quantity: 1,   unit: 'パック' },
   // 卵・乳製品
   { name: '卵',           category: '卵・乳製品', quantity: 6,   unit: '個' },
   { name: '牛乳',         category: '卵・乳製品', quantity: 1,   unit: 'L' },
@@ -853,6 +863,7 @@ const QUICK_INGREDIENTS = [
   { name: '生クリーム',   category: '卵・乳製品', quantity: 200, unit: 'ml' },
   { name: '豆腐',         category: '卵・乳製品', quantity: 1,   unit: '個' },
   { name: 'チーズ',       category: '卵・乳製品', quantity: 1,   unit: '個' },
+  { name: 'ヨーグルト',   category: '卵・乳製品', quantity: 1,   unit: '個' },
 
   // 調味料
   { name: '醤油',         category: '調味料',    quantity: 300, unit: 'ml' },
@@ -871,6 +882,10 @@ const QUICK_INGREDIENTS = [
   { name: 'コンソメ',     category: '調味料',    quantity: 1,   unit: '個' },
   { name: '甜麺醤',       category: '調味料',    quantity: 1,   unit: '個' },
   { name: 'オイスターソース', category: '調味料',  quantity: 1,   unit: '個' },
+  { name: 'ソース',       category: '調味料',    quantity: 1,   unit: '個' },
+  { name: '酢',           category: '調味料',    quantity: 200, unit: 'ml' },
+  { name: 'カレー粉',     category: '調味料',    quantity: 1,   unit: '個' },
+  { name: 'だし',         category: '調味料',    quantity: 1,   unit: '袋' },
   // 乾物・缶詰
   { name: 'パスタ',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
   { name: 'そば',         category: '乾物・缶詰', quantity: 200, unit: 'g' },
@@ -879,12 +894,22 @@ const QUICK_INGREDIENTS = [
   { name: 'ひじき',       category: '乾物・缶詰', quantity: 20,  unit: 'g' },
   { name: '薄力粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
   { name: 'うどん',       category: '乾物・缶詰', quantity: 1,   unit: '袋' },
+  { name: '小麦粉',       category: '乾物・缶詰', quantity: 200, unit: 'g' },
+  { name: 'のり',         category: '乾物・缶詰', quantity: 1,   unit: '袋' },
+  { name: '乾燥わかめ',   category: '乾物・缶詰', quantity: 20,  unit: 'g' },
+  { name: 'トマト缶',     category: '乾物・缶詰', quantity: 1,   unit: '缶' },
+  { name: 'コーン缶',     category: '乾物・缶詰', quantity: 1,   unit: '缶' },
+  { name: '大豆',         category: '乾物・缶詰', quantity: 1,   unit: '袋' },
   // その他
   { name: 'ご飯',         category: 'その他',    quantity: 2,   unit: '個' },
   { name: '油揚げ',       category: 'その他',    quantity: 2,   unit: '枚' },
   { name: '餃子の皮',     category: 'その他',    quantity: 30,  unit: '枚' },
   { name: '塩昆布',       category: 'その他',    quantity: 20,  unit: 'g' },
   { name: '納豆',         category: 'その他',    quantity: 1,   unit: 'パック' },
+  { name: '米',           category: 'その他',    quantity: 5,   unit: 'kg' },
+  { name: 'パン',         category: 'その他',    quantity: 1,   unit: '斤' },
+  { name: 'こんにゃく',   category: 'その他',    quantity: 1,   unit: '個' },
+  { name: 'キムチ',       category: 'その他',    quantity: 1,   unit: 'パック' },
 ];
 
 // === STATE ===
