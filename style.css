@@ -151,7 +151,8 @@ a { text-decoration: none; color: inherit; }
   flex: 1;
   overflow-y: auto;
   padding: 14px 16px;
-  padding-bottom: calc(var(--nav-height) + 12px);
+  /* フローティング買い物ボタンに最後のコンテンツが重ならないよう余白を確保 */
+  padding-bottom: calc(var(--nav-height) + 80px);
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
@@ -1283,11 +1284,6 @@ a { text-decoration: none; color: inherit; }
 }
 .fab:hover { transform: scale(1.1) rotate(10deg); box-shadow: 0 8px 24px rgba(255, 143, 171, 0.6); }
 .fab.visible { display: flex; }
-
-/* フローティングボタンが最後のコンテンツに重ならないよう余白を確保 */
-#panel-shopping .tab-scroll {
-  padding-bottom: calc(var(--nav-height) + 80px);
-}
 
 /* === STAT CHIPS IN TOOLBAR === */
 .stat-chip {
