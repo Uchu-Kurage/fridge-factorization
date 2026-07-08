@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
 };
 
 const INGREDIENT_CATEGORIES = ['野菜', '肉・魚', '卵・乳製品', '調味料', '乾物・缶詰', 'その他'];
-const RECIPE_CATEGORIES = ['和食', '洋食', '中華', 'エスニック', '丼・麺', '副菜・その他'];
+const RECIPE_CATEGORIES = ['和食', '洋食', '中華', 'エスニック', '韓国料理', '丼・麺', '副菜・その他'];
 const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '枚', '袋', '缶', 'パック', '束', '大さじ', '小さじ', '少々', '適量'];
 
 // 冷蔵庫の在庫レベル（数値・単位に代わるざっくり3段階）
@@ -32,7 +32,7 @@ const STOCK_RANK = { plenty: 2, low: 1, none: 0 };
 const CATEGORY_EMOJIS = {
   '野菜': '🥦', '肉・魚': '🥩', '卵・乳製品': '🥚',
   '調味料': '🧂', '乾物・缶詰': '🥫', 'その他': '🍱',
-  '和食': '🍱', '洋食': '🍝', '中華': '🥢', 'エスニック': '🌶️', '丼・麺': '🍜', '副菜・その他': '🥗',
+  '和食': '🍱', '洋食': '🍝', '中華': '🥢', 'エスニック': '🌶️', '韓国料理': '🇰🇷', '丼・麺': '🍜', '副菜・その他': '🥗',
 };
 
 // 食材ごとの絵文字（冷蔵庫イラストで棚に並べるアイコン）。
@@ -1369,9 +1369,9 @@ const BUILT_IN_RECIPES = [
     ],
     isCustom: false,
   },
-  // --- 韓国料理（エスニック） ---
+  // --- 韓国料理 ---
   {
-    id: 'r071', name: 'ビビンバ', category: 'エスニック', emoji: '🍚',
+    id: 'r071', name: 'ビビンバ', category: '韓国料理', emoji: '🍚',
     description: '彩り野菜のナムルと甘辛肉をご飯にのせて。よく混ぜて召し上がれ。',
     requiredIngredients: [
       { name: 'ご飯', quantity: 2, unit: '杯', optional: false },
@@ -1392,7 +1392,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r072', name: 'チャプチェ', category: 'エスニック', emoji: '🍜',
+    id: 'r072', name: 'チャプチェ', category: '韓国料理', emoji: '🍜',
     description: '春雨と野菜を甘辛く炒めた韓国の定番おかず。冷めても美味しい。',
     requiredIngredients: [
       { name: '春雨', quantity: 100, unit: 'g', optional: false },
@@ -1413,7 +1413,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r073', name: 'キンパ', category: 'エスニック', emoji: '🍙',
+    id: 'r073', name: 'キンパ', category: '韓国料理', emoji: '🍙',
     description: 'ごま油香る韓国風のり巻き。お弁当やおもてなしにもぴったり。',
     requiredIngredients: [
       { name: 'ご飯', quantity: 2, unit: '杯', optional: false },
@@ -1433,7 +1433,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r074', name: 'スンドゥブチゲ', category: 'エスニック', emoji: '🍲',
+    id: 'r074', name: 'スンドゥブチゲ', category: '韓国料理', emoji: '🍲',
     description: 'ぷるぷる純豆腐のピリ辛スープ。あさりの旨味で体もぽかぽか。',
     requiredIngredients: [
       { name: '絹豆腐', quantity: 1, unit: '丁', optional: false },
@@ -1453,7 +1453,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r075', name: 'チーズタッカルビ', category: 'エスニック', emoji: '🧀',
+    id: 'r075', name: 'チーズタッカルビ', category: '韓国料理', emoji: '🧀',
     description: '甘辛い鶏肉と野菜にとろけるチーズを絡めて。SNSでも人気の一皿。',
     requiredIngredients: [
       { name: '鶏もも肉', quantity: 300, unit: 'g', optional: false },
@@ -1473,7 +1473,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r076', name: 'ヤンニョムチキン', category: 'エスニック', emoji: '🍗',
+    id: 'r076', name: 'ヤンニョムチキン', category: '韓国料理', emoji: '🍗',
     description: 'カリッと揚げた鶏肉に甘辛だれを絡めた韓国式フライドチキン。',
     requiredIngredients: [
       { name: '鶏もも肉', quantity: 300, unit: 'g', optional: false },
@@ -1492,7 +1492,7 @@ const BUILT_IN_RECIPES = [
     isCustom: false,
   },
   {
-    id: 'r077', name: 'トッポギ', category: 'エスニック', emoji: '🌶️',
+    id: 'r077', name: 'トッポギ', category: '韓国料理', emoji: '🌶️',
     description: 'もちもちの餅を甘辛ソースで煮からめた韓国の定番おやつ。',
     requiredIngredients: [
       { name: 'トッポギ餅', quantity: 250, unit: 'g', optional: false },
