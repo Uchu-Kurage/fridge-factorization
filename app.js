@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
 };
 
 const INGREDIENT_CATEGORIES = ['野菜', '肉・魚', '卵・乳製品', '調味料', '乾物・缶詰', 'その他'];
-const RECIPE_CATEGORIES = ['和食', '洋食', '中華', '丼・麺', '副菜・その他'];
+const RECIPE_CATEGORIES = ['和食', '洋食', '中華', 'エスニック', '丼・麺', '副菜・その他'];
 const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '枚', '袋', '缶', 'パック', '束', '大さじ', '小さじ', '少々', '適量'];
 
 // 冷蔵庫の在庫レベル（数値・単位に代わるざっくり3段階）
@@ -32,7 +32,7 @@ const STOCK_RANK = { plenty: 2, low: 1, none: 0 };
 const CATEGORY_EMOJIS = {
   '野菜': '🥦', '肉・魚': '🥩', '卵・乳製品': '🥚',
   '調味料': '🧂', '乾物・缶詰': '🥫', 'その他': '🍱',
-  '和食': '🍱', '洋食': '🍝', '中華': '🥢', '丼・麺': '🍜', '副菜・その他': '🥗',
+  '和食': '🍱', '洋食': '🍝', '中華': '🥢', 'エスニック': '🌶️', '丼・麺': '🍜', '副菜・その他': '🥗',
 };
 
 // 食材ごとの絵文字（冷蔵庫イラストで棚に並べるアイコン）。
@@ -46,6 +46,8 @@ const FOOD_EMOJIS = {
   'しょうが': '🫚', 'ごぼう': '🥕', '大根': '🥬', 'ピーマン': '🫑',
   'しいたけ': '🍄', 'しめじ': '🍄', 'エリンギ': '🍄', 'えのき': '🍄',
   'なす': '🍆', 'かぼちゃ': '🎃', 'レタス': '🥬', 'ごま': '🌰',
+  'パクチー': '🌿', 'バジル': '🌿', 'レモングラス': '🌿', 'ニラ': '🌿',
+  'ライム': '🍋', '唐辛子': '🌶️', 'マッシュルーム': '🍄',
   // 肉・魚
   '豚肉': '🥓', '鶏肉': '🍗', '牛肉': '🥩', '豚ひき肉': '🥩', '鶏ひき肉': '🍗',
   'ベーコン': '🥓', '鮭': '🐟', 'まぐろ': '🐟', 'えび': '🍤', 'いか': '🦑',
@@ -59,10 +61,12 @@ const FOOD_EMOJIS = {
   'ケチャップ': '🍅', 'マヨネーズ': '🥚', '豆板醤': '🌶️', 'めんつゆ': '🫗',
   'コンソメ': '🧊', '甜麺醤': '🫙', 'オイスターソース': '🦪', 'ソース': '🫗',
   '酢': '🫗', 'カレー粉': '🍛', 'だし': '🫙',
+  'ナンプラー': '🫗', 'グリーンカレーペースト': '🍛', 'ココナッツミルク': '🥥',
+  'スイートチリソース': '🌶️',
   // 乾物・缶詰
   'パスタ': '🍝', 'そば': '🍜', '春雨': '🍜', 'ツナ缶': '🥫', 'ひじき': '🌿',
   '薄力粉': '🌾', 'うどん': '🍜', '小麦粉': '🌾', 'のり': '🍙', '乾燥わかめ': '🌿',
-  'トマト缶': '🥫', 'コーン缶': '🌽', '大豆': '🫘',
+  'トマト缶': '🥫', 'コーン缶': '🌽', '大豆': '🫘', 'ビーフン': '🍜', 'ピーナッツ': '🥜',
   // その他
   'ご飯': '🍚', '米': '🍚', '油揚げ': '🟨', '餃子の皮': '🥟', '塩昆布': '🌿',
   '納豆': '🫘', 'パン': '🍞', 'こんにゃく': '🟫', 'キムチ': '🌶️',
@@ -806,6 +810,124 @@ const BUILT_IN_RECIPES = [
       'フライパンにごま油を熱し、豚肉を炒める。',
       '肉の色が変わったらキャベツとピーマンを加えて炒める。',
       '野菜がしんなりしたら甜麺醤を加えて全体に絡め、完成！',
+    ],
+    isCustom: false,
+  },
+  // --- エスニック（タイ料理） ---
+  {
+    id: 'r042', name: 'ガパオライス', category: 'エスニック', emoji: '🌿',
+    description: 'バジルの香りとナンプラーが食欲をそそる！目玉焼きをのせたタイの定番ごはん。',
+    requiredIngredients: [
+      { name: '鶏ひき肉', quantity: 200, unit: 'g', optional: false },
+      { name: 'ピーマン', quantity: 1, unit: '個', optional: false },
+      { name: '玉ねぎ', quantity: 0.5, unit: '個', optional: false },
+      { name: 'にんにく', quantity: 2, unit: 'かけ', optional: false },
+      { name: '唐辛子', quantity: 1, unit: '本', optional: true },
+      { name: 'バジル', quantity: 1, unit: '適量', optional: false },
+      { name: 'ナンプラー', quantity: 1, unit: '大さじ', optional: false },
+      { name: 'オイスターソース', quantity: 1, unit: '大さじ', optional: false },
+      { name: '砂糖', quantity: 1, unit: '小さじ', optional: false },
+      { name: '卵', quantity: 1, unit: '個', optional: true },
+      { name: 'ご飯', quantity: 1, unit: '個', optional: false },
+    ],
+    steps: [
+      'にんにく・唐辛子はみじん切り、ピーマンと玉ねぎは粗みじん切りにする。',
+      'フライパンに油を熱し、にんにく・唐辛子を炒めて香りを出す。',
+      '鶏ひき肉を加えて炒め、色が変わったらピーマンと玉ねぎを加える。',
+      'ナンプラー・オイスターソース・砂糖で味付けし、最後にバジルを加えてさっと炒める。',
+      'ご飯とともに盛り付け、別に焼いた目玉焼きをのせて完成！',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r043', name: 'グリーンカレー', category: 'エスニック', emoji: '🍛',
+    description: 'ココナッツミルクのコクとスパイスの辛さがクセになる本格タイカレー。',
+    requiredIngredients: [
+      { name: '鶏肉', quantity: 200, unit: 'g', optional: false },
+      { name: 'グリーンカレーペースト', quantity: 2, unit: '大さじ', optional: false },
+      { name: 'ココナッツミルク', quantity: 400, unit: 'ml', optional: false },
+      { name: 'なす', quantity: 1, unit: '本', optional: false },
+      { name: 'ピーマン', quantity: 1, unit: '個', optional: false },
+      { name: 'ナンプラー', quantity: 1, unit: '大さじ', optional: false },
+      { name: '砂糖', quantity: 1, unit: '小さじ', optional: false },
+      { name: 'バジル', quantity: 1, unit: '適量', optional: true },
+      { name: 'ご飯', quantity: 2, unit: '個', optional: false },
+    ],
+    steps: [
+      '鶏肉は一口大に、なすとピーマンは乱切りにする。',
+      '鍋に油とグリーンカレーペーストを入れて炒め、香りを出す。',
+      'ココナッツミルクを加えて煮立て、鶏肉となすを加えて煮込む。',
+      'ピーマンを加え、ナンプラー・砂糖で味を整える。',
+      'バジルを加えてひと煮立ちさせ、ご飯を添えて完成！',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r044', name: 'トムヤムクン', category: 'エスニック', emoji: '🍤',
+    description: '酸味・辛味・旨味が一度に楽しめる世界三大スープのひとつ。',
+    requiredIngredients: [
+      { name: 'えび', quantity: 8, unit: '尾', optional: false },
+      { name: 'マッシュルーム', quantity: 1, unit: 'パック', optional: false },
+      { name: 'レモングラス', quantity: 1, unit: '本', optional: true },
+      { name: 'にんにく', quantity: 1, unit: 'かけ', optional: false },
+      { name: '唐辛子', quantity: 1, unit: '本', optional: true },
+      { name: 'ナンプラー', quantity: 2, unit: '大さじ', optional: false },
+      { name: 'ライム', quantity: 1, unit: '個', optional: false },
+      { name: 'ココナッツミルク', quantity: 50, unit: 'ml', optional: true },
+      { name: 'パクチー', quantity: 1, unit: '適量', optional: true },
+    ],
+    steps: [
+      'えびは背わたを取り、マッシュルームは薄切りにする。',
+      '鍋に水600mlを沸かし、つぶしたレモングラス・にんにく・唐辛子を入れて香りを出す。',
+      'えびとマッシュルームを加えて火を通す。',
+      'ナンプラーとココナッツミルクを加え、火を止めてライムを搾る。',
+      '器に注ぎ、パクチーを散らして完成！',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r045', name: 'パッタイ', category: 'エスニック', emoji: '🍜',
+    description: '甘酸っぱいタレともちもち米麺がやみつき！タイの国民的焼きそば。',
+    requiredIngredients: [
+      { name: 'ビーフン', quantity: 150, unit: 'g', optional: false },
+      { name: 'えび', quantity: 6, unit: '尾', optional: false },
+      { name: '卵', quantity: 1, unit: '個', optional: false },
+      { name: 'もやし', quantity: 1, unit: '袋', optional: false },
+      { name: 'ニラ', quantity: 0.5, unit: '束', optional: true },
+      { name: 'ナンプラー', quantity: 2, unit: '大さじ', optional: false },
+      { name: '砂糖', quantity: 1, unit: '大さじ', optional: false },
+      { name: '酢', quantity: 1, unit: '大さじ', optional: false },
+      { name: 'ピーナッツ', quantity: 1, unit: '適量', optional: true },
+      { name: 'ライム', quantity: 0.5, unit: '個', optional: true },
+    ],
+    steps: [
+      'ビーフンは表示通りに水で戻しておく。ナンプラー・砂糖・酢を混ぜてタレを作る。',
+      'フライパンに油を熱し、えびを炒めて取り出す。',
+      '溶き卵を炒め、戻したビーフンとタレを加えて炒め合わせる。',
+      'えび・もやし・ニラを加えてさっと炒める。',
+      '砕いたピーナッツを散らし、ライムを添えて完成！',
+    ],
+    isCustom: false,
+  },
+  {
+    id: 'r046', name: 'カオマンガイ', category: 'エスニック', emoji: '🍗',
+    description: '鶏の旨味を吸ったご飯が絶品！炊飯器で作れるタイのチキンライス。',
+    requiredIngredients: [
+      { name: '鶏肉', quantity: 1, unit: '枚', optional: false },
+      { name: '米', quantity: 2, unit: '個', optional: false },
+      { name: 'しょうが', quantity: 1, unit: 'かけ', optional: false },
+      { name: 'にんにく', quantity: 1, unit: 'かけ', optional: false },
+      { name: 'ナンプラー', quantity: 1, unit: '大さじ', optional: false },
+      { name: 'スイートチリソース', quantity: 2, unit: '大さじ', optional: true },
+      { name: 'きゅうり', quantity: 0.5, unit: '本', optional: true },
+      { name: 'パクチー', quantity: 1, unit: '適量', optional: true },
+    ],
+    steps: [
+      '米をとぎ、炊飯器に入れて通常の水加減にする。',
+      'すりおろしたしょうが・にんにく・ナンプラーを米に加え、鶏肉を丸ごとのせて炊く。',
+      '炊き上がったら鶏肉を取り出して食べやすく切る。',
+      'ご飯とともに盛り付け、きゅうり・パクチーを添える。',
+      'ナンプラーとスイートチリソースを混ぜたタレをかけて完成！',
     ],
     isCustom: false,
   },
