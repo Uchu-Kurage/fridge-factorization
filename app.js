@@ -1814,6 +1814,97 @@ function getSortedSuggestedRecipes() {
     .sort((a, b) => b.info.percentage - a.info.percentage);
 }
 
+// === セットレシピ提案（食材の因数分解）===
+// 冷蔵庫の食材を「因数分解」して、指定食数ぶんの作れるレシピをまとめて提案する。
+// 調味料の残量は気にしない（無制限）。それ以外の食材は在庫ランク（たっぷり=2回・すこし=1回）
+// ぶんだけ使えると見なし、同じ食材を使いすぎて枯渇しないようにレシピを選ぶ。
+function buildMealSet(n) {
+  const available = availableIngredients();
+
+  // 非調味料の食材ごとに「あと何回使えるか」の予算を持たせる
+  const budget = new Map();   // fridgeId -> 残り使用回数
+  const nameById = new Map(); // fridgeId -> 食材名
+  for (const fi of available) {
+    nameById.set(fi.id, fi.name);
+    if (fi.category === '調味料') continue; // 調味料は枯渇を気にしない
+    budget.set(fi.id, STOCK_RANK[fi.stock] || 0);
+  }
+
+  // 候補＝いま作れるレシピ。各レシピが消費する「非調味料食材」のidを添える
+  const candidates = getAllRecipes()
+    .map(r => ({ recipe: r, info: getRecipeMatchInfo(r) }))
+    .filter(({ info }) => info.canMake)
+    .map(({ recipe, info }) => {
+      const consumed = [];
+      const seen = new Set();
+      for (const m of info.matched) {
+        const fi = m.fridgeIng;
+        if (!fi || fi.category === '調味料') continue;
+        if (seen.has(fi.id)) continue;
+        seen.add(fi.id);
+        consumed.push(fi.id);
+      }
+      return { recipe, consumed };
+    });
+
+  const chosen = [];
+  const chosenIds = new Set();
+  const usageCount = new Map();      // fridgeId -> セット内で使った回数
+  const usedCategories = new Map();  // レシピジャンル -> 採用数
+
+  while (chosen.length < n) {
+    let best = null;
+    let bestScore = null;
+
+    for (const cand of candidates) {
+      if (chosenIds.has(cand.recipe.id)) continue;
+      // 予算に収まるか（消費する各食材の残予算が1以上）
+      const fits = cand.consumed.every(id => (budget.get(id) || 0) >= 1);
+      if (!fits) continue;
+
+      // スコア（小さいほど良い）
+      // ・残予算の少ない＝希少な食材を使うほどペナルティ（枯渇を避けて温存）
+      let score = 0;
+      for (const id of cand.consumed) {
+        score += 1 / (budget.get(id) || 1);
+      }
+      // ・同じジャンルの重複を避けて献立に変化を出す
+      score += (usedCategories.get(cand.recipe.category) || 0) * 0.5;
+      // ・より多くの食材を使う（＝因数分解が進む）ものをわずかに優遇
+      score -= cand.consumed.length * 0.01;
+      // ・僅かなゆらぎで「別の組み合わせ」でも違う献立になるようにする
+      score += Math.random() * 0.25;
+
+      if (bestScore === null || score < bestScore) {
+        bestScore = score;
+        best = cand;
+      }
+    }
+
+    if (!best) break; // これ以上、予算内で作れるレシピが無い
+
+    chosen.push(best.recipe);
+    chosenIds.add(best.recipe.id);
+    usedCategories.set(best.recipe.category, (usedCategories.get(best.recipe.category) || 0) + 1);
+    for (const id of best.consumed) {
+      budget.set(id, (budget.get(id) || 0) - 1);
+      usageCount.set(id, (usageCount.get(id) || 0) + 1);
+    }
+  }
+
+  // 使った食材のサマリ（使用回数の多い順）
+  const usedIngredients = [...usageCount.entries()]
+    .map(([id, count]) => ({ id, name: nameById.get(id) || '', count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    requested: n,
+    recipes: chosen,
+    usedIngredients,
+    complete: chosen.length >= n,
+  };
+}
+
 // === SHOPPING LIST ===
 function addToShoppingList(item) {
   state.shoppingList.push({
@@ -3137,6 +3228,22 @@ function addRegularToShopping(regId) {
 
 
 // ==================== RENDER: SUGGEST TAB ====================
+// セット提案の操作バー（3食・5食・7食のまとめ提案ボタン）
+function renderMealSetBar() {
+  return `
+    <div class="mealset-bar">
+      <div class="mealset-bar-head">
+        <span class="mealset-bar-title">🍱 まとめて献立づくり</span>
+        <span class="mealset-bar-hint">冷蔵庫の食材を因数分解して、指定食数ぶんのレシピを提案します</span>
+      </div>
+      <div class="mealset-btns">
+        <button class="mealset-btn" onclick="showMealSetModal(3)">3食分</button>
+        <button class="mealset-btn" onclick="showMealSetModal(5)">5食分</button>
+        <button class="mealset-btn" onclick="showMealSetModal(7)">7食分</button>
+      </div>
+    </div>`;
+}
+
 function renderSuggestTab() {
   const container = document.getElementById('suggest-content');
   if (!container) return;
@@ -3157,7 +3264,7 @@ function renderSuggestTab() {
   }
 
   if (items.length === 0) {
-    container.innerHTML = `
+    container.innerHTML = renderMealSetBar() + `
       <div class="empty-state">
         <div class="empty-icon">🤔</div>
         <p>該当するメニューがありません</p>
@@ -3193,6 +3300,7 @@ function renderSuggestTab() {
       </div>`;
   }
 
+  const setBar = renderMealSetBar();
   let html = '';
 
   if (filter === 'all' || filter === 'can') {
@@ -3216,7 +3324,64 @@ function renderSuggestTab() {
     }
   }
 
-  container.innerHTML = html || `<div class="empty-state"><div class="empty-icon">🔍</div><p>該当なし</p></div>`;
+  container.innerHTML = setBar + (html || `<div class="empty-state"><div class="empty-icon">🔍</div><p>該当なし</p></div>`);
+}
+
+// セット提案の結果をモーダルで表示する
+function showMealSetModal(n) {
+  const result = buildMealSet(n);
+  const { recipes, usedIngredients, complete, requested } = result;
+
+  let body;
+  if (recipes.length === 0) {
+    body = `
+      <div class="mealset-empty">
+        <div class="empty-icon">🤔</div>
+        <p>今の在庫だと、まとめて作れるレシピが見つかりませんでした。</p>
+        <p class="mealset-empty-hint">食材を追加するか、在庫レベルを見直してみてください。</p>
+      </div>`;
+  } else {
+    const noteHtml = complete
+      ? `<div class="mealset-note mealset-note-ok">✨ 食材を使い切らないように、${requested}食分の献立を組みました！</div>`
+      : `<div class="mealset-note mealset-note-warn">🍽️ 在庫の都合で、${requested}食のうち <strong>${recipes.length}食分</strong> を提案します。</div>`;
+
+    const recipeRows = recipes.map((r, i) => `
+      <button type="button" class="mealset-recipe" onclick="showRecipeDetailModal('${r.id}')">
+        <span class="mealset-recipe-no">${i + 1}</span>
+        <span class="mealset-recipe-emoji">${r.emoji}</span>
+        <span class="mealset-recipe-info">
+          <span class="mealset-recipe-name">${escapeHtml(r.name)}</span>
+          <span class="mealset-recipe-cat">${CATEGORY_EMOJIS[r.category] || ''} ${escapeHtml(r.category)}</span>
+        </span>
+        <span class="mealset-recipe-arrow">›</span>
+      </button>`).join('');
+
+    const ingChips = usedIngredients.length > 0
+      ? `<div class="mealset-section-label">🥕 使う食材（${usedIngredients.length}種）</div>
+         <div class="mealset-ings">${usedIngredients.map(ing =>
+           `<span class="mealset-ing-chip">${escapeHtml(ing.name)}${ing.count > 1 ? `<span class="mealset-ing-count">×${ing.count}</span>` : ''}</span>`
+         ).join('')}</div>`
+      : '';
+
+    body = `
+      ${noteHtml}
+      <div class="mealset-section-label">🍳 提案する献立</div>
+      <div class="mealset-recipe-list">${recipeRows}</div>
+      ${ingChips}
+      <p class="mealset-tip">💡 調味料以外の食材は在庫のぶんだけ使うので、作っても食材が足りなくなりません。</p>`;
+  }
+
+  openModal(`
+    <div class="modal-header">
+      <h2>🍱 ${requested}食分のセット提案</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
+      ${recipes.length > 0 ? `<button class="btn btn-primary" onclick="showMealSetModal(${requested})">🔀 別の組み合わせ</button>` : ''}
+    </div>
+  `);
 }
 
 // ==================== RENDER: SHOPPING TAB ====================
