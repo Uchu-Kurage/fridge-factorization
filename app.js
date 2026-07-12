@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   CUSTOM_RECIPES: 'fridge_custom_recipes',
   RECIPE_OVERRIDES: 'fridge_recipe_overrides',
   REGULAR_SETTINGS: 'fridge_regular_settings',
+  NEXT_RECIPES: 'fridge_next_recipes',
 };
 
 const INGREDIENT_CATEGORIES = ['野菜', '肉・魚', '卵・乳製品', '調味料', '乾物・缶詰', 'その他'];
@@ -1673,6 +1674,7 @@ let state = {
   customRecipes: [],
   recipeOverrides: {},   // 組み込みレシピの編集内容（id → 上書きレシピ）
   regularSettings: [],   // レギュラー食材設定
+  nextRecipes: [],       // 次つくるレシピのストック（レシピidの配列・追加順）
   activeTab: 'fridge',
   fridgeSearch: '',
   fridgeCategoryFilter: 'all',
@@ -1688,6 +1690,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(state.customRecipes));
   localStorage.setItem(STORAGE_KEYS.RECIPE_OVERRIDES, JSON.stringify(state.recipeOverrides));
   localStorage.setItem(STORAGE_KEYS.REGULAR_SETTINGS, JSON.stringify(state.regularSettings));
+  localStorage.setItem(STORAGE_KEYS.NEXT_RECIPES, JSON.stringify(state.nextRecipes));
   // Update shopping badge whenever state is saved
   const badge = document.getElementById('shopping-badge');
   if (badge) {
@@ -1710,12 +1713,14 @@ function loadState() {
     state.customRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES) || '[]');
     state.recipeOverrides = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECIPE_OVERRIDES) || '{}');
     state.regularSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGULAR_SETTINGS) || '[]');
+    state.nextRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.NEXT_RECIPES) || '[]');
   } catch {
     state.ingredients = [];
     state.shoppingList = [];
     state.customRecipes = [];
     state.recipeOverrides = {};
     state.regularSettings = [];
+    state.nextRecipes = [];
   }
   migrateState();
 }
@@ -1741,6 +1746,10 @@ function migrateState() {
     delete item.quantity;
     delete item.unit;
   }
+  // 次つくるストックから、存在しないレシピid（削除済みカスタムレシピなど）を掃除
+  if (!Array.isArray(state.nextRecipes)) state.nextRecipes = [];
+  const validRecipeIds = new Set(getAllRecipes().map(r => r.id));
+  state.nextRecipes = state.nextRecipes.filter(id => validRecipeIds.has(id));
 }
 
 // === UTILS ===
@@ -2442,6 +2451,10 @@ function showRecipeDetailModal(recipeId) {
     ? `<button class="btn btn-success" onclick="cookRecipe('${recipeId}')">🍳 この料理を作る！</button>`
     : '';
 
+  const nextStockBtn = isNextRecipe(recipeId)
+    ? `<button class="btn btn-ghost" onclick="toggleNextRecipeFromDetail('${recipeId}')">📌 ストック解除</button>`
+    : `<button class="btn btn-accent" onclick="toggleNextRecipeFromDetail('${recipeId}')">📌 次つくるレシピに</button>`;
+
   openModal(`
     <div class="modal-header">
       <h2>${recipe.emoji} ${escapeHtml(recipe.name)}</h2>
@@ -2463,6 +2476,7 @@ function showRecipeDetailModal(recipeId) {
       <ol class="steps-list">${stepsList}</ol>
     </div>
     <div class="modal-footer">
+      ${nextStockBtn}
       ${missingShoppingBtns}
       ${cookBtn}
       <button class="btn btn-secondary" onclick="showRecipeFormModal('${recipeId}')">✏️ 編集</button>
@@ -2487,7 +2501,10 @@ function cookRecipe(recipeId) {
 
   if (targets.length === 0) {
     // 減らせる在庫が無い場合はそのまま完了
+    finishNextRecipeAfterCook(recipeId);
+    saveState();
     closeModal();
+    renderSuggestTab();
     showToast(`${recipe.name} を作りました！🍽️`, 'success');
     return;
   }
@@ -2528,11 +2545,19 @@ function applyCookResult(recipeId, idsCsv) {
     if (!fi) continue;
     fi.stock = readStockSeg('cook-stock-' + id);
   }
+  finishNextRecipeAfterCook(recipeId);
   saveState();
   closeModal();
   renderFridgeTab();
   renderSuggestTab();
   showToast(`${recipe ? recipe.name : '料理'} を作りました！🍽️`, 'success');
+}
+
+// 作った料理が「次つくる」にストックされていたら、役目を終えたので自動で外す
+function finishNextRecipeAfterCook(recipeId) {
+  if (!isNextRecipe(recipeId)) return;
+  state.nextRecipes = state.nextRecipes.filter(id => id !== recipeId);
+  // 呼び出し元が saveState / renderSuggestTab を行うのでここでは状態変更のみ
 }
 
 function addMissingToShopping(recipeId) {
@@ -2784,6 +2809,7 @@ function deleteCustomRecipe(id) {
   if (!r) return;
   if (!confirm(`「${r.name}」を削除しますか？`)) return;
   state.customRecipes = state.customRecipes.filter(r => r.id !== id);
+  state.nextRecipes = state.nextRecipes.filter(rid => rid !== id);
   saveState();
   renderLibraryTab();
   renderSuggestTab();
@@ -3227,6 +3253,68 @@ function addRegularToShopping(regId) {
 }
 
 
+/// ==================== 次つくるレシピ（ストック）====================
+// 提案されたレシピを「次つくる」としてストックしておき、提案タブの最上部に固定表示する。
+
+function isNextRecipe(recipeId) {
+  return state.nextRecipes.includes(recipeId);
+}
+
+function toggleNextRecipe(recipeId) {
+  const recipe = getAllRecipes().find(r => r.id === recipeId);
+  if (!recipe) return;
+  if (isNextRecipe(recipeId)) {
+    state.nextRecipes = state.nextRecipes.filter(id => id !== recipeId);
+    showToast(`「${recipe.name}」をストックから外しました`, 'info');
+  } else {
+    state.nextRecipes.push(recipeId);
+    showToast(`「${recipe.name}」を次つくるレシピにストックしました 📌`, 'success');
+  }
+  saveState();
+  renderSuggestTab();
+}
+
+// レシピ詳細モーダル内のボタン用：トグル後にモーダルを再描画してボタン表示を更新
+function toggleNextRecipeFromDetail(recipeId) {
+  toggleNextRecipe(recipeId);
+  showRecipeDetailModal(recipeId);
+}
+
+// 提案タブ最上部の「次つくるレシピ」ストック欄
+function renderNextRecipesSection() {
+  if (state.nextRecipes.length === 0) return '';
+
+  const all = getAllRecipes();
+  const rows = state.nextRecipes
+    .map(id => all.find(r => r.id === id))
+    .filter(Boolean)
+    .map(recipe => {
+      const info = getRecipeMatchInfo(recipe);
+      const status = info.canMake
+        ? '<span class="next-recipe-status next-recipe-status-ok">✨ 今すぐ作れる</span>'
+        : `<span class="next-recipe-status next-recipe-status-wait">🛒 あと${info.missing.length}品: ${escapeHtml(info.missing.map(m => m.name).join('・'))}</span>`;
+      const cookBtn = info.canMake
+        ? `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();cookRecipe('${recipe.id}')">🍳 作る</button>`
+        : '';
+      return `
+        <div class="next-recipe-row" onclick="showRecipeDetailModal('${recipe.id}')">
+          <span class="next-recipe-emoji">${recipe.emoji}</span>
+          <span class="next-recipe-info">
+            <span class="next-recipe-name">${escapeHtml(recipe.name)}</span>
+            ${status}
+          </span>
+          ${cookBtn}
+          <button class="next-recipe-remove" onclick="event.stopPropagation();toggleNextRecipe('${recipe.id}')" aria-label="ストックから外す" title="ストックから外す">✕</button>
+        </div>`;
+    }).join('');
+
+  return `
+    <div class="next-recipes-box">
+      <div class="next-recipes-title">📌 次つくるレシピ（${state.nextRecipes.length}品）</div>
+      <div class="next-recipes-list">${rows}</div>
+    </div>`;
+}
+
 // ==================== RENDER: SUGGEST TAB ====================
 // セット提案の操作バー（3食・5食・7食のまとめ提案ボタン）
 function renderMealSetBar() {
@@ -3253,8 +3341,10 @@ function renderSuggestTab() {
   if (filter === 'can') items = items.filter(({ info }) => info.canMake);
   else if (filter === 'almost') items = items.filter(({ info }) => !info.canMake && info.missing.length <= 3);
 
+  const nextSection = renderNextRecipesSection();
+
   if (state.ingredients.length === 0) {
-    container.innerHTML = `
+    container.innerHTML = nextSection + `
       <div class="empty-state">
         <div class="empty-icon">🍽️</div>
         <p>冷蔵庫に食材を登録してください</p>
@@ -3264,7 +3354,7 @@ function renderSuggestTab() {
   }
 
   if (items.length === 0) {
-    container.innerHTML = renderMealSetBar() + `
+    container.innerHTML = nextSection + renderMealSetBar() + `
       <div class="empty-state">
         <div class="empty-icon">🤔</div>
         <p>該当するメニューがありません</p>
@@ -3281,9 +3371,16 @@ function renderSuggestTab() {
     const missingText = info.missing.length > 0
       ? `<p class="missing-hint">不足: ${info.missing.map(m => m.name).join('・')}</p>`
       : '<p class="can-make-hint">✨ 今すぐ作れます！</p>';
+    const pinned = isNextRecipe(recipe.id);
 
     return `
       <div class="recipe-card" onclick="showRecipeDetailModal('${recipe.id}')">
+        <div class="recipe-card-actions">
+          <button class="pin-recipe-btn${pinned ? ' pinned' : ''}"
+            onclick="event.stopPropagation();toggleNextRecipe('${recipe.id}')"
+            aria-label="${pinned ? 'ストックから外す' : '次つくるレシピにストック'}"
+            title="${pinned ? 'ストックから外す' : '次つくるレシピにストック'}">📌</button>
+        </div>
         <div class="recipe-card-emoji">${recipe.emoji}</div>
         <div class="recipe-card-body">
           <div class="recipe-card-name">${escapeHtml(recipe.name)}</div>
@@ -3324,7 +3421,7 @@ function renderSuggestTab() {
     }
   }
 
-  container.innerHTML = setBar + (html || `<div class="empty-state"><div class="empty-icon">🔍</div><p>該当なし</p></div>`);
+  container.innerHTML = nextSection + setBar + (html || `<div class="empty-state"><div class="empty-icon">🔍</div><p>該当なし</p></div>`);
 }
 
 // セット提案の結果をモーダルで表示する
