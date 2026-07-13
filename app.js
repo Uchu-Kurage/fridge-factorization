@@ -2447,6 +2447,62 @@ function autoFillIngCategory(nameEl) {
   }
 }
 
+// 食材名からカテゴリを推定する共通関数
+// 登録済みの食材（冷蔵庫）を優先し、なければ QUICK_INGREDIENTS から推定
+function lookupCategoryForName(name) {
+  const lower = name.trim().toLowerCase();
+  if (!lower) return null;
+
+  // 1. 登録済みの食材（冷蔵庫）: 完全一致 → 部分一致
+  let ing = state.ingredients.find(i => i.name.toLowerCase() === lower);
+  if (!ing) {
+    ing = state.ingredients.find(i =>
+      i.name.toLowerCase().includes(lower) || lower.includes(i.name.toLowerCase())
+    );
+  }
+  if (ing && ing.category && ing.category !== 'その他') return ing.category;
+
+  // 2. QUICK_INGREDIENTS: 完全一致 → 部分一致
+  let match = QUICK_INGREDIENTS.find(q => q.name.toLowerCase() === lower);
+  if (!match) {
+    match = QUICK_INGREDIENTS.find(q =>
+      q.name.toLowerCase().includes(lower) || lower.includes(q.name.toLowerCase())
+    );
+  }
+  if (match && match.category && match.category !== 'その他') return match.category;
+
+  return null;
+}
+
+// 買い物アイテム名からカテゴリを自動選択して入力
+function autoFillShoppingCategory(nameEl) {
+  const name = nameEl.value.trim();
+  const hint = document.getElementById('sh-autofill-hint');
+
+  if (!name) {
+    if (hint) hint.textContent = '';
+    return;
+  }
+
+  const category = lookupCategoryForName(name);
+  if (!category) {
+    if (hint) hint.textContent = '';
+    return;
+  }
+
+  const catSel = document.getElementById('sh-category');
+  if (catSel) catSel.value = category;
+
+  if (hint) {
+    hint.textContent = `✨ カテゴリを「${category}」に自動設定しました`;
+    hint.className = 'autofill-hint autofill-hint-active';
+    clearTimeout(hint._timer);
+    hint._timer = setTimeout(() => {
+      hint.className = 'autofill-hint';
+    }, 2500);
+  }
+}
+
 // ==================== 在庫レベルの直接変更（カードのセグメント） ====================
 function setStock(id, level) {
   const ing = state.ingredients.find(i => i.id === id);
@@ -3821,7 +3877,11 @@ function showAddShoppingModal() {
     <div class="modal-body">
       <div class="form-group">
         <label>食材名 <span class="required">*</span></label>
-        <input type="text" id="sh-name" class="form-input" placeholder="例: 牛肉" />
+        <div class="ing-name-wrap">
+          <input type="text" id="sh-name" class="form-input" placeholder="例: 牛肉"
+            oninput="autoFillShoppingCategory(this)" />
+          <span id="sh-autofill-hint" class="autofill-hint"></span>
+        </div>
       </div>
       <div class="form-group">
         <label>カテゴリ</label>
