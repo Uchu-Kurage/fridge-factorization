@@ -1160,6 +1160,10 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   align-items: flex-end;
   padding: 0;
+  /* ソフトキーボード表示時、その高さ分だけボトムシートを押し上げて
+     入力欄がキーボードに隠れないようにする（値は JS で更新） */
+  padding-bottom: var(--keyboard-inset, 0px);
+  box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;

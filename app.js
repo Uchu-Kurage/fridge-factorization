@@ -2089,6 +2089,16 @@ function openModal(html) {
   currentModal = box;
 }
 
+// ソフトキーボード対策: VisualViewport からキーボードの高さを求め、
+// --keyboard-inset に反映してボトムシート（モーダル）を押し上げる。
+// iOS Safari / Chrome Android の両方に対応する。
+function updateKeyboardInset() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+  document.documentElement.style.setProperty('--keyboard-inset', inset + 'px');
+}
+
 function closeModal() {
   const overlay = document.getElementById('modal-overlay');
   overlay.classList.remove('active');
@@ -4031,6 +4041,13 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
+
+  // ソフトキーボードの高さを追従（入力欄がキーボードに隠れないように）
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateKeyboardInset);
+    window.visualViewport.addEventListener('scroll', updateKeyboardInset);
+    updateKeyboardInset();
+  }
 
   // Fridge search
   document.getElementById('fridge-search').addEventListener('input', (e) => {
