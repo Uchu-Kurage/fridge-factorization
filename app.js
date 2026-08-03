@@ -174,7 +174,7 @@ const BUILT_IN_RECIPES = [
   },
   {
     id: 'r004', name: '豚汁', category: '和食', emoji: '🍲',
-    description: '三越伊勢丹FOODIE直伝。煮込まず蒸し煮にして野菜の甘みを引き出す、根菜たっぷりの豚汁。',
+    description: '煮込まず蒸し煮にして野菜の甘みを引き出す、根菜たっぷりの豚汁。',
     requiredIngredients: [
       { name: '豚バラ肉', quantity: 150, unit: 'g', optional: false },
       { name: '大根', quantity: 0.25, unit: '本', optional: false },
@@ -417,7 +417,7 @@ const BUILT_IN_RECIPES = [
   },
   {
     id: 'r017', name: '麻婆豆腐', category: '中華', emoji: '🌶️',
-    description: '四川料理のスゴイ人直伝。花椒をたっぷりきかせた、しびれる本格四川麻婆豆腐。',
+    description: '花椒をたっぷりきかせた、しびれる本格四川麻婆豆腐。',
     requiredIngredients: [
       { name: '木綿豆腐', quantity: 1, unit: '個', optional: false },
       { name: '豚ひき肉', quantity: 100, unit: 'g', optional: false },
@@ -833,7 +833,7 @@ const BUILT_IN_RECIPES = [
   },
   {
     id: 'r041', name: '回鍋肉', category: '中華', emoji: '🥢',
-    description: '神奈川県養豚協会直伝。塊肉をゆでてから薄切りにする本格スタイル。甜麺醤のコクがご飯にすすむ。',
+    description: '塊肉をゆでてから薄切りにする本格スタイル。甜麺醤のコクがご飯にすすむ。',
     requiredIngredients: [
       { name: '豚バラ肉', quantity: 200, unit: 'g', optional: false },
       { name: 'キャベツ', quantity: 0.25, unit: '個', optional: false },
@@ -861,7 +861,7 @@ const BUILT_IN_RECIPES = [
   // --- エスニック（タイ料理） ---
   {
     id: 'r042', name: 'ガパオライス', category: 'エスニック', emoji: '🌿',
-    description: '全農Apron掲載のプロレシピ。パプリカで彩りよく、バジル香るタイの定番ごはん。',
+    description: 'パプリカで彩りよく、バジル香るタイの定番ごはん。',
     requiredIngredients: [
       { name: '鶏ひき肉', quantity: 200, unit: 'g', optional: false },
       { name: '玉ねぎ', quantity: 0.5, unit: '個', optional: false },
@@ -1545,7 +1545,7 @@ const BUILT_IN_RECIPES = [
   // --- 揚げ物 ---
   {
     id: 'r078', name: '鶏の唐揚げ', category: '和食', emoji: '🍗',
-    description: '人気の定食屋・菱田屋さん直伝。溶き卵入りのたれにじっくり漬け込み、二度揚げで外はカリッと中はジューシー。',
+    description: '溶き卵入りのたれにじっくり漬け込み、二度揚げで外はカリッと中はジューシー。',
     requiredIngredients: [
       { name: '鶏もも肉', quantity: 300, unit: 'g', optional: false },
       { name: '醤油', quantity: 2, unit: '大さじ', optional: false },
@@ -1650,7 +1650,7 @@ const BUILT_IN_RECIPES = [
   },
   {
     id: 'r083', name: 'チャーシュー', category: '中華', emoji: '🍖',
-    description: '外房レシピ直伝。圧力鍋で塩味に仕上げる、さっぱりトロトロの本格チャーシュー。',
+    description: '圧力鍋で塩味に仕上げる、さっぱりトロトロの本格チャーシュー。',
     requiredIngredients: [
       { name: '豚バラ肉', quantity: 400, unit: 'g', optional: false },
       { name: 'しょうが', quantity: 1, unit: '片', optional: false },
@@ -1674,7 +1674,7 @@ const BUILT_IN_RECIPES = [
   },
   {
     id: 'r084', name: 'エビチリ', category: '中華', emoji: '🍤',
-    description: 'noteの人気レシピ、ジャンボたかおお母様直伝。ケチャップベースで作る家庭のエビチリ。',
+    description: 'ケチャップベースで作る、甘辛やみつきな家庭のエビチリ。',
     requiredIngredients: [
       { name: 'えび', quantity: 200, unit: 'g', optional: false },
       { name: 'ネギ', quantity: 0.5, unit: '本', optional: false },
