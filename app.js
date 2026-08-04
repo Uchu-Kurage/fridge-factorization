@@ -16,6 +16,11 @@ const STORAGE_KEYS = {
 
 const INGREDIENT_CATEGORIES = ['野菜', 'きのこ', '肉・魚', '卵・乳製品', '大豆製品', '調味料', '乾物・缶詰', 'その他'];
 const RECIPE_CATEGORIES = ['和食', '洋食', '中華', 'エスニック', '丼・麺', '副菜・その他'];
+// 「副菜・その他」は主菜と組み合わせて初めて1食分になる副菜ジャンル。それ以外は主菜扱い。
+const SIDE_DISH_CATEGORY = '副菜・その他';
+function isSideDish(recipe) {
+  return recipe.category === SIDE_DISH_CATEGORY;
+}
 const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '枚', '袋', '缶', 'パック', '束', '大さじ', '小さじ', '少々', '適量'];
 
 // 冷蔵庫の在庫レベル（数値・単位に代わるざっくり3段階）
@@ -2031,6 +2036,7 @@ function getSortedSuggestedRecipes() {
 // 冷蔵庫の食材を「因数分解」して、指定食数ぶんの作れるレシピをまとめて提案する。
 // 調味料の残量は気にしない（無制限）。それ以外の食材は在庫ランク（たっぷり=2回・すこし=1回）
 // ぶんだけ使えると見なし、同じ食材を使いすぎて枯渇しないようにレシピを選ぶ。
+// 1食分は「主菜1品（＋あれば副菜1品）」で構成し、副菜だけでは1食分に数えない。
 function buildMealSet(n) {
   const available = availableIngredients();
 
@@ -2060,16 +2066,20 @@ function buildMealSet(n) {
       return { recipe, consumed };
     });
 
-  const chosen = [];
+  // 主菜（副菜以外）と副菜に分ける。1食分の中心は主菜、副菜はそれに添える。
+  const mainCandidates = candidates.filter(c => !isSideDish(c.recipe));
+  const sideCandidates = candidates.filter(c => isSideDish(c.recipe));
+
+  const meals = [];                  // { main, side } の配列。1要素＝1食分
   const chosenIds = new Set();
   const usageCount = new Map();      // fridgeId -> セット内で使った回数
   const usedCategories = new Map();  // レシピジャンル -> 採用数
 
-  while (chosen.length < n) {
+  // 予算内で最良の候補（スコアが小さいほど良い）を1つ選ぶ。無ければ null。
+  function pickBest(pool) {
     let best = null;
     let bestScore = null;
-
-    for (const cand of candidates) {
+    for (const cand of pool) {
       if (chosenIds.has(cand.recipe.id)) continue;
       // 予算に収まるか（消費する各食材の残予算が1以上）
       const fits = cand.consumed.every(id => (budget.get(id) || 0) >= 1);
@@ -2093,16 +2103,30 @@ function buildMealSet(n) {
         best = cand;
       }
     }
+    return best;
+  }
 
-    if (!best) break; // これ以上、予算内で作れるレシピが無い
-
-    chosen.push(best.recipe);
-    chosenIds.add(best.recipe.id);
-    usedCategories.set(best.recipe.category, (usedCategories.get(best.recipe.category) || 0) + 1);
-    for (const id of best.consumed) {
+  // 採用した候補の予算・使用回数・ジャンルを反映する
+  function commit(cand) {
+    chosenIds.add(cand.recipe.id);
+    usedCategories.set(cand.recipe.category, (usedCategories.get(cand.recipe.category) || 0) + 1);
+    for (const id of cand.consumed) {
       budget.set(id, (budget.get(id) || 0) - 1);
       usageCount.set(id, (usageCount.get(id) || 0) + 1);
     }
+  }
+
+  while (meals.length < n) {
+    // まず主菜を決める。主菜が確保できなければ1食分にならないので打ち切る。
+    const main = pickBest(mainCandidates);
+    if (!main) break;
+    commit(main);
+
+    // 予算に余裕があれば副菜を1品添える（無くても主菜だけで1食分）。
+    const side = pickBest(sideCandidates);
+    if (side) commit(side);
+
+    meals.push({ main: main.recipe, side: side ? side.recipe : null });
   }
 
   // 使った食材のサマリ（使用回数の多い順）
@@ -2112,9 +2136,9 @@ function buildMealSet(n) {
 
   return {
     requested: n,
-    recipes: chosen,
+    meals,
     usedIngredients,
-    complete: chosen.length >= n,
+    complete: meals.length >= n,
   };
 }
 
@@ -3592,7 +3616,7 @@ function renderMealSetBar() {
     <div class="mealset-bar">
       <div class="mealset-bar-head">
         <span class="mealset-bar-title">🍱 まとめて献立づくり</span>
-        <span class="mealset-bar-hint">冷蔵庫の食材を因数分解して、指定食数ぶんのレシピを提案します</span>
+        <span class="mealset-bar-hint">冷蔵庫の食材を因数分解して、指定食数ぶんの献立（主菜＋副菜）を提案します</span>
       </div>
       <div class="mealset-btns">
         <button class="mealset-btn" onclick="showMealSetModal(3)">3食分</button>
@@ -3697,31 +3721,41 @@ function renderSuggestTab() {
 // セット提案の結果をモーダルで表示する
 function showMealSetModal(n) {
   const result = buildMealSet(n);
-  const { recipes, usedIngredients, complete, requested } = result;
+  const { meals, usedIngredients, complete, requested } = result;
 
   let body;
-  if (recipes.length === 0) {
+  if (meals.length === 0) {
     body = `
       <div class="mealset-empty">
         <div class="empty-icon">🤔</div>
-        <p>今の在庫だと、まとめて作れるレシピが見つかりませんでした。</p>
-        <p class="mealset-empty-hint">食材を追加するか、在庫レベルを見直してみてください。</p>
+        <p>今の在庫だと、主菜になるレシピが見つかりませんでした。</p>
+        <p class="mealset-empty-hint">副菜だけでは1食分になりません。主菜の食材を追加するか、在庫レベルを見直してみてください。</p>
       </div>`;
   } else {
     const noteHtml = complete
       ? `<div class="mealset-note mealset-note-ok">✨ 食材を使い切らないように、${requested}食分の献立を組みました！</div>`
-      : `<div class="mealset-note mealset-note-warn">🍽️ 在庫の都合で、${requested}食のうち <strong>${recipes.length}食分</strong> を提案します。</div>`;
+      : `<div class="mealset-note mealset-note-warn">🍽️ 在庫の都合で、${requested}食のうち <strong>${meals.length}食分</strong> を提案します。</div>`;
 
-    const recipeRows = recipes.map((r, i) => `
-      <button type="button" class="mealset-recipe" onclick="showRecipeDetailModal('${r.id}')">
-        <span class="mealset-recipe-no">${i + 1}</span>
-        <span class="mealset-recipe-emoji">${r.emoji}</span>
-        <span class="mealset-recipe-info">
-          <span class="mealset-recipe-name">${escapeHtml(r.name)}</span>
-          <span class="mealset-recipe-cat">${CATEGORY_EMOJIS[r.category] || ''} ${escapeHtml(r.category)}</span>
-        </span>
-        <span class="mealset-recipe-arrow">›</span>
-      </button>`).join('');
+    // 1食分＝主菜（＋あれば副菜）。役割ラベル付きで1品ずつ表示する。
+    function recipeRow(r, role) {
+      return `
+        <button type="button" class="mealset-recipe" onclick="showRecipeDetailModal('${r.id}')">
+          <span class="mealset-recipe-role mealset-role-${role === '主菜' ? 'main' : 'side'}">${role}</span>
+          <span class="mealset-recipe-emoji">${r.emoji}</span>
+          <span class="mealset-recipe-info">
+            <span class="mealset-recipe-name">${escapeHtml(r.name)}</span>
+            <span class="mealset-recipe-cat">${CATEGORY_EMOJIS[r.category] || ''} ${escapeHtml(r.category)}</span>
+          </span>
+          <span class="mealset-recipe-arrow">›</span>
+        </button>`;
+    }
+
+    const recipeRows = meals.map((meal, i) => `
+      <div class="mealset-meal">
+        <div class="mealset-meal-head">${i + 1}食目</div>
+        ${recipeRow(meal.main, '主菜')}
+        ${meal.side ? recipeRow(meal.side, '副菜') : ''}
+      </div>`).join('');
 
     const ingChips = usedIngredients.length > 0
       ? `<div class="mealset-section-label">🥕 使う食材（${usedIngredients.length}種）</div>
@@ -3746,7 +3780,7 @@ function showMealSetModal(n) {
     <div class="modal-body">${body}</div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
-      ${recipes.length > 0 ? `<button class="btn btn-primary" onclick="showMealSetModal(${requested})">🔀 別の組み合わせ</button>` : ''}
+      ${meals.length > 0 ? `<button class="btn btn-primary" onclick="showMealSetModal(${requested})">🔀 別の組み合わせ</button>` : ''}
     </div>
   `);
 }
