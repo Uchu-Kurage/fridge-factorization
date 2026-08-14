@@ -134,9 +134,16 @@
       <div class="tab-toolbar">
         <div class="tab-toolbar-row">
           <span class="tab-toolbar-title">📚 レシピ</span>
-          <button id="btn-add-recipe" class="btn btn-secondary btn-sm" aria-label="カスタムレシピを追加">
-            ＋ 自作レシピ
-          </button>
+          <div class="toolbar-btn-group">
+            <button id="btn-regular-menu-manager" class="btn btn-ghost btn-sm" aria-label="定番メニュー管理"
+              onclick="showRegularMenuManagerModal()">
+              ⭐ 定番管理
+              <span id="regular-menu-badge" class="nav-badge" style="display:none; position:static; margin-left:4px;"></span>
+            </button>
+            <button id="btn-add-recipe" class="btn btn-secondary btn-sm" aria-label="カスタムレシピを追加">
+              ＋ 自作レシピ
+            </button>
+          </div>
         </div>
         <div class="tab-toolbar-row" style="margin-top:10px;">
           <div class="search-input-wrap">

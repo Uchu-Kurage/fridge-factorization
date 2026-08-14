@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   RECIPE_OVERRIDES: 'fridge_recipe_overrides',
   REGULAR_SETTINGS: 'fridge_regular_settings',
   NEXT_RECIPES: 'fridge_next_recipes',
+  REGULAR_MENUS: 'fridge_regular_menus',
 };
 
 const INGREDIENT_CATEGORIES = ['野菜', 'きのこ', '肉・魚', '卵・乳製品', '大豆製品', '調味料', '乾物・缶詰', 'その他'];
@@ -1873,6 +1874,7 @@ let state = {
   customRecipes: [],
   recipeOverrides: {},   // 組み込みレシピの編集内容（id → 上書きレシピ）
   regularSettings: [],   // レギュラー食材設定
+  regularMenus: [],      // レギュラーメニュー（定番レシピ）のレシピidの配列・登録順
   nextRecipes: [],       // 次つくるレシピのストック（レシピidの配列・追加順）
   activeTab: 'fridge',
   fridgeSearch: '',
@@ -1889,6 +1891,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(state.customRecipes));
   localStorage.setItem(STORAGE_KEYS.RECIPE_OVERRIDES, JSON.stringify(state.recipeOverrides));
   localStorage.setItem(STORAGE_KEYS.REGULAR_SETTINGS, JSON.stringify(state.regularSettings));
+  localStorage.setItem(STORAGE_KEYS.REGULAR_MENUS, JSON.stringify(state.regularMenus));
   localStorage.setItem(STORAGE_KEYS.NEXT_RECIPES, JSON.stringify(state.nextRecipes));
   // Update shopping badge whenever state is saved
   const badge = document.getElementById('shopping-badge');
@@ -1899,6 +1902,8 @@ function saveState() {
   }
   // Update regular alert badge
   updateRegularAlertBadge();
+  // Update regular menu badge
+  updateRegularMenuBadge();
   // Update expiry alert badge
   updateExpiryAlertBadge();
   // Update suggest badge（今すぐ作れるメニュー数）
@@ -1912,6 +1917,7 @@ function loadState() {
     state.customRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES) || '[]');
     state.recipeOverrides = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECIPE_OVERRIDES) || '{}');
     state.regularSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGULAR_SETTINGS) || '[]');
+    state.regularMenus = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGULAR_MENUS) || '[]');
     state.nextRecipes = JSON.parse(localStorage.getItem(STORAGE_KEYS.NEXT_RECIPES) || '[]');
   } catch {
     state.ingredients = [];
@@ -1919,6 +1925,7 @@ function loadState() {
     state.customRecipes = [];
     state.recipeOverrides = {};
     state.regularSettings = [];
+    state.regularMenus = [];
     state.nextRecipes = [];
   }
   migrateState();
@@ -1955,10 +1962,15 @@ function migrateState() {
     delete item.quantity;
     delete item.unit;
   }
-  // 次つくるストックから、存在しないレシピid（削除済みカスタムレシピなど）を掃除
+  // 次つくるストック・レギュラーメニューから、存在しないレシピid（削除済みカスタムレシピなど）を掃除
   if (!Array.isArray(state.nextRecipes)) state.nextRecipes = [];
+  if (!Array.isArray(state.regularMenus)) state.regularMenus = [];
   const validRecipeIds = new Set(getAllRecipes().map(r => r.id));
   state.nextRecipes = state.nextRecipes.filter(id => validRecipeIds.has(id));
+  // 重複を除きつつ、存在するレシピidだけを残す
+  state.regularMenus = state.regularMenus.filter(
+    (id, i) => validRecipeIds.has(id) && state.regularMenus.indexOf(id) === i
+  );
 }
 
 // === UTILS ===
@@ -2749,6 +2761,10 @@ function showRecipeDetailModal(recipeId) {
     ? `<button class="btn btn-ghost" onclick="toggleNextRecipeFromDetail('${recipeId}')">📌 ストック解除</button>`
     : `<button class="btn btn-accent" onclick="toggleNextRecipeFromDetail('${recipeId}')">📌 次つくるレシピに</button>`;
 
+  const regularMenuBtn = isRegularMenu(recipeId)
+    ? `<button class="btn btn-ghost" onclick="toggleRegularMenuFromDetail('${recipeId}')">⭐ 定番を解除</button>`
+    : `<button class="btn btn-ghost" onclick="toggleRegularMenuFromDetail('${recipeId}')">⭐ 定番メニューに登録</button>`;
+
   openModal(`
     <div class="modal-header">
       <h2>${recipe.emoji} ${escapeHtml(recipe.name)}</h2>
@@ -2771,6 +2787,7 @@ function showRecipeDetailModal(recipeId) {
     </div>
     <div class="modal-footer">
       ${nextStockBtn}
+      ${regularMenuBtn}
       ${missingShoppingBtns}
       ${cookBtn}
       <button class="btn btn-secondary" onclick="showRecipeFormModal('${recipeId}')">✏️ 編集</button>
@@ -3342,6 +3359,107 @@ function removeRegularSetting(id) {
   showToast(`${reg?.name || ''} をレギュラーから解除しました`, 'info');
   // 管理モーダルが開いていれば再描画
   showRegularManagerModal();
+}
+
+// ==================== レギュラーメニュー（定番レシピ）====================
+// よく作る定番のレシピを登録して管理する。登録順に並び、並べ替え・解除ができる。
+
+function isRegularMenu(recipeId) {
+  return state.regularMenus.includes(recipeId);
+}
+
+function toggleRegularMenu(recipeId) {
+  const recipe = getAllRecipes().find(r => r.id === recipeId);
+  if (!recipe) return;
+  if (isRegularMenu(recipeId)) {
+    state.regularMenus = state.regularMenus.filter(id => id !== recipeId);
+    showToast(`「${recipe.name}」を定番メニューから外しました`, 'info');
+  } else {
+    state.regularMenus.push(recipeId);
+    showToast(`「${recipe.name}」を定番メニューに登録しました ⭐`, 'success');
+  }
+  saveState();
+  renderLibraryTab();
+}
+
+// レシピ詳細モーダル内から呼ぶ：トグル後にモーダルを再描画してボタン表示を更新
+function toggleRegularMenuFromDetail(recipeId) {
+  toggleRegularMenu(recipeId);
+  showRecipeDetailModal(recipeId);
+}
+
+// 管理モーダル内での並べ替え（dir: -1 で上へ / +1 で下へ）
+function moveRegularMenu(recipeId, dir) {
+  const idx = state.regularMenus.indexOf(recipeId);
+  if (idx === -1) return;
+  const swap = idx + dir;
+  if (swap < 0 || swap >= state.regularMenus.length) return;
+  [state.regularMenus[idx], state.regularMenus[swap]] = [state.regularMenus[swap], state.regularMenus[idx]];
+  saveState();
+  renderLibraryTab();
+  showRegularMenuManagerModal();
+}
+
+function removeRegularMenu(recipeId) {
+  const recipe = getAllRecipes().find(r => r.id === recipeId);
+  state.regularMenus = state.regularMenus.filter(id => id !== recipeId);
+  saveState();
+  renderLibraryTab();
+  showToast(`${recipe?.name || ''} を定番メニューから外しました`, 'info');
+  // 管理モーダルが開いていれば再描画
+  showRegularMenuManagerModal();
+}
+
+function updateRegularMenuBadge() {
+  const badge = document.getElementById('regular-menu-badge');
+  if (!badge) return;
+  const count = state.regularMenus.length;
+  badge.textContent = count > 0 ? count : '';
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+// 定番メニューの一覧・並べ替え・解除を行う管理モーダル
+function showRegularMenuManagerModal() {
+  const all = getAllRecipes();
+  const list = state.regularMenus.map(id => all.find(r => r.id === id)).filter(Boolean);
+
+  const rows = list.length === 0
+    ? `<p class="regular-empty-hint">定番メニューが未登録です。<br>レシピカードの ⭐ から登録できます。</p>`
+    : list.map((recipe, i) => {
+        const info = getRecipeMatchInfo(recipe);
+        const status = info.canMake
+          ? `<span class="reg-status reg-status-ok">✨ 今すぐ作れる</span>`
+          : `<span class="reg-status reg-status-low">🛒 あと${info.missing.length}品</span>`;
+        const upDisabled = i === 0 ? ' disabled' : '';
+        const downDisabled = i === list.length - 1 ? ' disabled' : '';
+        return `
+          <div class="regular-row">
+            <div class="regular-row-info regular-menu-row-info" onclick="showRecipeDetailModal('${recipe.id}')">
+              <span class="regular-row-name">${recipe.emoji} ${escapeHtml(recipe.name)}</span>
+              <span class="regular-row-min">${CATEGORY_EMOJIS[recipe.category]} ${recipe.category}</span>
+              ${status}
+            </div>
+            <div class="regular-row-actions">
+              <button class="btn-icon"${upDisabled} onclick="moveRegularMenu('${recipe.id}',-1)" aria-label="上へ移動" title="上へ">▲</button>
+              <button class="btn-icon"${downDisabled} onclick="moveRegularMenu('${recipe.id}',1)" aria-label="下へ移動" title="下へ">▼</button>
+              <button class="btn-icon danger" onclick="removeRegularMenu('${recipe.id}')" aria-label="定番から外す" title="定番から外す">🗑️</button>
+            </div>
+          </div>`;
+      }).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>⭐ 定番メニューの管理</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="regular-manager-desc">よく作る定番のレシピを登録しておけます。カードの ⭐ から登録し、ここで並べ替え・解除ができます。</p>
+      <div class="regular-list">${rows}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">閉じる</button>
+    </div>
+  `);
 }
 
 // ==================== RENDER: FRIDGE TAB ====================
@@ -4053,12 +4171,14 @@ function renderLibraryTab() {
 
   container.innerHTML = `<div class="recipe-grid">${recipes.map(recipe => {
     const info = getRecipeMatchInfo(recipe);
+    const isRegular = isRegularMenu(recipe.id);
     return `
-      <div class="recipe-card" onclick="showRecipeDetailModal('${recipe.id}')">
+      <div class="recipe-card${isRegular ? ' recipe-card-regular' : ''}" onclick="showRecipeDetailModal('${recipe.id}')">
         <div class="recipe-card-emoji">${recipe.emoji}</div>
         <div class="recipe-card-body">
           <div class="recipe-card-name">${escapeHtml(recipe.name)}</div>
           <div class="recipe-card-meta">
+            ${isRegular ? '<span class="regular-menu-tag">⭐ 定番</span>' : ''}
             <span class="category-tag">${recipe.category}</span>
             ${recipe.isCustom ? '<span class="custom-tag">カスタム</span>' : ''}
             ${!recipe.isCustom && isRecipeOverridden(recipe.id) ? '<span class="edited-tag">編集済み</span>' : ''}
@@ -4070,6 +4190,10 @@ function renderLibraryTab() {
           <span class="match-pct-mini">${info.percentage}%</span>
         </div>
         <div class="recipe-card-actions">
+          <button class="star-recipe-btn${isRegular ? ' active' : ''}"
+            onclick="event.stopPropagation();toggleRegularMenu('${recipe.id}')"
+            aria-label="${isRegular ? '定番メニューから外す' : '定番メニューに登録'}"
+            title="${isRegular ? '定番メニューから外す' : '定番メニューに登録'}">⭐</button>
           <button class="edit-recipe-btn" onclick="event.stopPropagation();showRecipeFormModal('${recipe.id}')">✏️</button>
           ${recipe.isCustom ? `<button class="delete-recipe-btn" onclick="event.stopPropagation();deleteCustomRecipe('${recipe.id}')">🗑️</button>` : ''}
         </div>
@@ -4207,6 +4331,7 @@ function init() {
   // Update badge on shopping tab nav
   updateShoppingBadge();
   updateSuggestBadge();
+  updateRegularMenuBadge();
 }
 
 function updateShoppingBadge() {
